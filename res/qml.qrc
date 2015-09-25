@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Big.qml</file>
+        <file>NotesList.qml</file>
+        <file>Note.qml</file>
+        <file>Small.qml</file>
+        <file>ErrorDialog.qml</file>
+    </qresource>
+</RCC>

@@ -3,15 +3,23 @@
 
 #include <QtCore>
 #include <QtGui>
-#include <QtQml>
 #include <QtDebug>
+#include <QApplication>
+#include <QMainWindow>
+#include <QMessageBox>
 
+#include <exception>
 #include <memory>
 #include <vector>
+#include <stack>
+#include <set>
 #include <unordered_set>
 #include <unordered_map>
 #include <cstring>
+#include <memory>
 
+#include "App.h"
+#include "Exceptions.h"
 
 
 namespace std{
@@ -53,3 +61,14 @@ typedef uint64_t                 ui64;
 
 #endif // PRECOMP_H
 
+// shit below is to fix QtCreator clang autocompletion
+//#define _GLIBCXX_BEGIN_NAMESPACE(name) namespace name {
+//#define _GLIBCXX_END_NAMESPACE }
+//#define _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
+//#define _GLIBCXX_END_NAMESPACE_CONTAINER
+//#define _GLIBCXX_END_NAMESPACE_VERSION
+//#define _GLIBCXX_BEGIN_NAMESPACE_VERSION
+//#define __glibcxx_function_requires(...)
+//#define __try try
+//#define __catch catch
+//#define __cplusplus 999999L

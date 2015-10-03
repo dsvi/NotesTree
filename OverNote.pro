@@ -1,8 +1,8 @@
 TEMPLATE = app
-LANGUAGE  = C++
+QMAKE_EXT_CPP += c++
 OBJECTS_DIR = ./tmp
 #TARGET =
-QT += qml quick
+QT += widgets
 CONFIG += precompile_header
 CONFIG += c++14
 
@@ -15,11 +15,13 @@ CONFIG(debug, debug|release) {
 PRECOMPILED_HEADER = src/precomp.h
 
 SOURCES += \
-    src/main.cpp \
-    src/Note.cpp \
-    src/NotesTreeModel.cpp \
-    src/FilenameEncoder.cpp \
-    src/QMLApp.cpp
+    src/main.c++ \
+    src/Note.c++ \
+    src/NotesTreeModel.c++ \
+    src/MainWindow.c++ \
+    src/App.c++ \
+    src/FileSystem.c++ \
+    src/Exceptions.c++
 
 RESOURCES += res/qml.qrc
 
@@ -31,8 +33,12 @@ QML_IMPORT_PATH =
 HEADERS +=  src/precomp.h \
     src/Note.h \
     src/NotesTreeModel.h \
-    src/FilenameEncoder.h \
-    src/QMLApp.h
+    src/MainWindow.h \
+    src/App.h \
+    src/FileSystem.h \
+    src/Exceptions.h \
+    src/ByteArraySerializer.h
 
+FORMS    += src/MainWindow.ui
 
 

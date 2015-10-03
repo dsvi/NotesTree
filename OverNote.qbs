@@ -6,13 +6,18 @@ QtGuiApplication {
 	//destinationDirectory: "./out"
 	files: [
         "res/qml.qrc",
-        "src/Directory.cpp",
-        "src/Directory.h",
-        "src/Note.cpp",
+        "src/App.c++",
+        "src/App.h",
+        "src/FilenameEncoder.c++",
+        "src/FilenameEncoder.h",
+        "src/MainWindow.c++",
+        "src/MainWindow.h",
+        "src/MainWindow.ui",
+        "src/Note.c++",
         "src/Note.h",
-        "src/NotesTreeModel.cpp",
+        "src/NotesTreeModel.c++",
         "src/NotesTreeModel.h",
-        "src/main.cpp",
+        "src/main.c++",
         "src/precomp.h",
     ]
 
@@ -31,10 +36,9 @@ QtGuiApplication {
 		condition: qbs.buildVariant == "release"
 		cpp.optimization: "fast"
 	}
-	//cpp.cxxLanguageVersion : "c++11"
-	cpp.cppFlags: "-std=c++14"
+	cpp.cxxLanguageVersion : "c++14"
 	cpp.cxxPrecompiledHeader: "src/precomp.h"
-	Depends { name: "Qt"; submodules: ["quick", "svg"] }
+	Depends { name: "Qt"; submodules: ["widgets", "svg"] }
 	//Depends { name: "Qt"; submodules: ["core", "gui", "quick", "svg"] }
 }
 

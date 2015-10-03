@@ -8,20 +8,22 @@ class NotesTreeModel : public QAbstractItemModel
 	Q_OBJECT
 public:
 	enum Roles {
-			NameRole = Qt::UserRole + 1,
+		NameRole = Qt::UserRole + 1,
 	};
 
 	explicit NotesTreeModel(QObject *parent = nullptr);
 
 	// QAbstractItemModel interface
-	//QMap<int, QVariant> itemData(const QModelIndex &index) const override;
-	//bool setItemData(const QModelIndex &index, const QMap<int, QVariant> &roles) override;
 	QVariant data(const QModelIndex &index, int role) const override;
 	bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-	//bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
-	//QHash<int,QByteArray> roleNames() const override;
-	bool insertRows(int row, int count, const QModelIndex &parent) override;
-	//bool insertColumns(int column, int count, const QModelIndex &parent) override;
+
+	/// ⭣ this is required for drag und drop support
+	Qt::DropActions supportedDropActions() const override;
+	QStringList mimeTypes() const override;
+	QMimeData *mimeData(const QModelIndexList &indexes) const override;
+	bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override;
+	/// ⭡ this is required for drag und drop support
+
 	Qt::ItemFlags flags(const QModelIndex &index) const override;
 	QModelIndex index(int row, int column,
 										const QModelIndex &parent = QModelIndex()) const override;
@@ -36,8 +38,8 @@ public slots:
 	void rootPath(QString path);
 
 private:
-	Note root;
-
+	Note root_;
+	QString mimeType_ = "application/x.overnote-note";
 };
 
 #endif // NOTESTREEMODEL_H

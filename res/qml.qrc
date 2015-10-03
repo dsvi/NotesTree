@@ -1,10 +1,13 @@
 <RCC>
-    <qresource prefix="/">
-        <file>main.qml</file>
-        <file>Big.qml</file>
-        <file>NotesList.qml</file>
-        <file>Note.qml</file>
-        <file>Small.qml</file>
-        <file>ErrorDialog.qml</file>
+    <qresource prefix="/"/>
+    <qresource prefix="/ico">
+        <file>ico/bold.svg</file>
+        <file>ico/italic.svg</file>
+        <file alias="remove">ico/minus.svg</file>
+        <file>ico/pencil.svg</file>
+        <file alias="add">ico/plus.svg</file>
+        <file>ico/spinner6.svg</file>
+        <file>ico/subscript.svg</file>
+        <file>ico/superscript.svg</file>
     </qresource>
 </RCC>

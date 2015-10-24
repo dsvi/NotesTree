@@ -36,6 +36,8 @@ signals:
 
 public slots:
 	void rootPath(QString path);
+	/// if parentNote invalid, than add to root
+	void addNote(QModelIndex parentNote, const QString &name);
 
 private:
 	Note root_;

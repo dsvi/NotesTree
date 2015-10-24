@@ -5,7 +5,6 @@ class Note
 {
 public:
 	Note();
-	Note(const QString &name);
 
 	/// nullptr means this is root
 	Note *parent();
@@ -15,6 +14,7 @@ public:
 	const Note *child(size_t ndx) const;
 	size_t findIndexOf(const Note *) const;
 
+	/// true if a subnote with such name already here
 	bool exist(const QString &name);
 	/// returns the full path in hierarchy to this note, not including its name.
 	/// or empty string, if the parent() of this note is nullptr
@@ -28,7 +28,7 @@ public:
 
 	/// create hierarchy of notes and subnotes from the root folder
 	/// this note becames root of the hierarchy
-	void createHierarchyFromRoot(const QDir &path);
+	void createHierarchyFromRoot(const QString &path);
 
 	/// add the file as attached to the note
 	void attach(const QFileInfo &fi);
@@ -36,50 +36,52 @@ public:
 	bool  hasAttach() const;
 	bool  hasSubnotes() const;
 	bool  hasText() const;
-	const QDir* attachDir() const;
-	const QDir* subNotesDir() const;
-	const QFileInfo* textPathname() const;
+	boost::filesystem::path attachDir() const;
+	boost::filesystem::path subNotesDir() const;
+	boost::filesystem::path textPathname() const;
 
 	/// adds the note as child to this, removes it from prev parent.
 	/// make sure the note with the same name doesn't exist here already, before adopting another one.
 	/// \sa exist
 	void adopt(Note *n);
-	/// this one takes in account positions in hierarchy. it adops chlidren frst, than parents, to avoid file renaming troubles.
-	/// so if you'd like to adopt a bunch of notes at a time, you \b should use this.
+	/// same as above, but adds a lot at a time
 	/// the list shall not contain notes with the same names or names of subnotes to this one.
 	void adopt(std::vector<Note*> &&list);
+
+	Note *createSubnote(const QString &name);
 
 signals:
 public slots:
 private:
 	Note     *parent_ = nullptr;
-	QString		name_;
-	QString   path_;
-	QFileInfo textPathname_;
-	QDir      subDir_;
-	QDir      attachDir_;
+	QString		name_; // root has path to root here, instead of name
+
 	std::vector<std::unique_ptr<Note>> subNotes_;
 
+	boost::filesystem::path pathToNote() const;
+
 	/// populate list of subnotes and the name from the @path dir
-	void addFromSubnotesDir(const QDir &path, Note *parent);
-	/// pathname should end on fileExt()
-	void noteTextFile(const QFileInfo &textPathname, Note *parent);
-	void move(const QString &newPath, const QString &newFileName);
+	void addFromSubnotesDir(const boost::filesystem::path &path);
+	/// pathname should end on textExt
+	void createFromNoteTextFile(const boost::filesystem::path &textPathname);
+	void move(const boost::filesystem::path &newPath, const boost::filesystem::path &newFileName);
 	void sortSubnotes();
 	void adopt_(Note *n);
+	void cleanUpFileSystem();
+	void ensureSubDirExist();
+	std::unique_ptr<boost::filesystem::fstream> openText();
+	
 
 	static
-	QString DecodeFromFilename(const QString &fn);
+	QString decodeFromFilename(const boost::filesystem::path& fn);
 	static
-	QString EncodeToFilename(const QString &name);
+	boost::filesystem::path encodeToFilename(const QString& name);
 	constexpr	static
-	const char* fileExt(){
-		return ".html";
-	}
+	const char *textExt = u8".html";
 	static constexpr
-	const QChar delimChar = L'|';
+	const char delimChar = 1;
 	constexpr	static
-	const char *attachExt = u8"|attach";
+	const char *attachExt = delimChar + u8"attach";
 };
 
 inline
@@ -114,21 +116,7 @@ QString Note::name() const
 {
 	return name_;
 }
-inline
-const QDir* Note::attachDir() const
-{
-	return &attachDir_;
-}
-inline
-const QDir *Note::subNotesDir() const
-{
-	return &subDir_;
-}
-inline
-const QFileInfo* Note::textPathname() const
-{
-	return &textPathname_;
-}
+
 
 
 #endif // NOTE_H

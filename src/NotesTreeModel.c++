@@ -31,7 +31,8 @@ bool NotesTreeModel::setData(const QModelIndex &index, const QVariant &value, in
 		item->name(value.toString());
 	}
 	catch(...){
-		emit app->fatal(std::current_exception());
+		emit app->error(std::current_exception());
+		return false;
 	}
 
 	emit dataChanged(index, index, QVector<int>{Qt::DisplayRole});
@@ -67,8 +68,8 @@ bool NotesTreeModel::dropMimeData(const QMimeData *data, Qt::DropAction action, 
 	Q_UNUSED(row)
 	Q_UNUSED(column)
 	ASSERT(action == Qt::MoveAction);
+	layoutAboutToBeChanged();
 	try{
-		layoutAboutToBeChanged();
 		Note *parentNote;
 		if (!parent.isValid())
 			parentNote = &root_;
@@ -79,30 +80,17 @@ bool NotesTreeModel::dropMimeData(const QMimeData *data, Qt::DropAction action, 
 		decltype(ba.size()) numNotes;
 		bd.get(numNotes);
 		std::vector<Note*> list;
-		std::set<QString> existanceCheck;
 		for (int num = 0; num < numNotes; ++num){
 			Note *n;
 			bd.get(n);
-			QString name = n->name();
-			if (parentNote->exist(name) || existanceCheck.find(name) != existanceCheck.end()){
-				app->showErrorDilog(make_exception_ptr(Exception(
-					"notes moving",
-					"Note names have to be unique in the subnotes list. Can't move '%1'\n"
-					"Skipped.\n"
-					"FYI the skipped one was originally a subnote of\n"
-					"'%2'.\n"
-					"... and might still be.") % name % n->makePathName() ));
-				continue;
-			}
-			existanceCheck.insert(name);
 			list.push_back(n);
 		}
 		parentNote->adopt(std::move(list));
-		layoutChanged();
 	}
 	catch(...){
-		app->fatal(std::current_exception());
+		app->error(std::current_exception());
 	}
+	layoutChanged();
 	return true;
 }
 
@@ -171,12 +159,21 @@ int NotesTreeModel::columnCount(const QModelIndex &parent) const
 void NotesTreeModel::rootPath(QString path)
 {
 	try{
-		root_.createHierarchyFromRoot(QDir{path});
+		root_.createHierarchyFromRoot(path);
 	}
 	catch(...){
 		emit app->showErrorDilog(std::current_exception());
 	}
 	emit modelChanged();
+}
+
+void NotesTreeModel::addNote(QModelIndex parentNote, const QString &name)
+{
+	const Note *parent;
+	if (parentNote.isValid())
+		parent = static_cast<Note*>(parentNote.internalPointer());
+	else
+		parent = &root_;
 }
 
 

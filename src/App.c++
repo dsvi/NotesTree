@@ -9,6 +9,11 @@ App::App(QObject *parent) : QObject(parent)
 		showErrorDilogSlot(e);
 		QCoreApplication::exit(1);
 	});
+	connect(this, &App::error, [=](std::exception_ptr e) {
+		showErrorDilogSlot(e);
+		if (!isRecoverable(e))
+			QCoreApplication::exit(1);
+	});
 }
 
 void BuildErrorMsg(const std::exception& e, QString &msg){
@@ -37,4 +42,6 @@ void App::showErrorDilogSlot(std::exception_ptr eptr)
 	msgBox.setInformativeText(msg);
 	msgBox.exec();
 }
+
+
 

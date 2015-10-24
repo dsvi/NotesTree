@@ -1,30 +1,34 @@
 #include "Note.h"
-#include "FileSystem.h"
 
-const QChar Note::delimChar;
+using namespace std;
+using namespace boost::filesystem;
+
+const char Note::delimChar;
 
 Note::Note()
 {
-
 }
-QString Note::DecodeFromFilename(const QString &fn)
+
+QString Note::decodeFromFilename(const boost::filesystem::path &filename)
 {
 	QString ret;
+	QString fn(filename.c_str());
 	ret.reserve(fn.size());
 	for (auto c = fn.begin(); c != fn.end(); ++c){
 		if (*c == delimChar){
 			QString num;
 			for (int i = 2; --i >= 0;){
 				if (++c == fn.end()){
-					throw Exception("Filesystem", "Wrong num after delimiter %1 in file name: %2") % delimChar % fn;
+					throw Exception(QCoreApplication::translate(
+						"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
 				}
 				num += *c;
 			}
 			bool ok;
 			int code = num.toInt(&ok, 16);
 			if (!ok){
-				throw Exception("Filesystem", "Wrong num after delimiter %1 in file name: %2") % delimChar % fn;
-				return ret;
+				throw Exception(QCoreApplication::translate(
+					"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
 			}
 			ret += QChar(code);
 		}
@@ -35,7 +39,7 @@ QString Note::DecodeFromFilename(const QString &fn)
 	return ret;
 }
 
-QString Note::EncodeToFilename(const QString &name)
+boost::filesystem::path Note::encodeToFilename(const QString &name)
 {
 	QString ret;
 	ret.reserve(name.size());
@@ -53,50 +57,50 @@ QString Note::EncodeToFilename(const QString &name)
 			ret += c;
 		}
 	}
-	return ret;
+	return path(ret.toUtf8());
 }
 
-void Note::addFromSubnotesDir(const QDir &path, Note *parent)
+void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 {
-	parent_ = parent;
-	subNotes_.clear();
-	name_ = DecodeFromFilename(path.dirName());
-	subDir_ = path;
-	path_ = GetParentDir(path) + "/";
-	auto filesList = path.entryInfoList(QDir::AllEntries|QDir::NoDotAndDotDot);
-	std::unordered_map<QString, QFileInfo*> dirs;
-	for (auto &fi : filesList){
-		if (fi.isDir())
-			dirs.insert({fi.fileName(), &fi});
-	}
-	for (auto &fi : filesList){
-		if (fi.isDir())
+	if (name_.isNull())
+		name_ = decodeFromFilename(path.filename());
+	std::unordered_map<QString, directory_entry> dirs;
+	for (auto&& x : directory_iterator(path))
+		if (x.status().type() == file_type::directory_file)
+			dirs.insert({x.path().filename().c_str(), x});
+	for (directory_entry& fi : directory_iterator(path)){
+		if (fi.status().type() == file_type::directory_file)
 			continue;
-		auto name = fi.fileName();
-		if (!name.endsWith(Note::fileExt()) )
+		QString name = fi.path().filename().c_str();
+		if (!name.endsWith(Note::textExt))
 			continue;
 		std::unique_ptr<Note> note(new Note());
-		note->noteTextFile(fi.absoluteFilePath(), this);
-		dirs.erase(note->subNotesDir()->dirName());
+		note->parent_ = this;
+		note->createFromNoteTextFile(fi.path());
+		dirs.erase(encodeToFilename(note->name()).c_str());
 		subNotes_.push_back(std::move(note));
 	}
 	for (auto &dir : dirs){
-		if (dir.second->fileName().endsWith(attachExt))
+		const boost::filesystem::path &dirPath = dir.second.path();
+		if (QString(dirPath.filename().c_str()).endsWith(attachExt))
 			continue;
-		auto subDir = QDir{dir.second->absoluteFilePath()};
 		std::unique_ptr<Note> subNote(new Note());
-		subNote->addFromSubnotesDir(subDir, this);
+		subNote->parent_ = this;
+		subNote->addFromSubnotesDir(dirPath);
 		subNotes_.push_back(std::move(subNote));
 	}
 	sortSubnotes();
 }
 
-void Note::createHierarchyFromRoot(const QDir &path)
+void Note::createHierarchyFromRoot(const QString &p)
 {
 	try{
-		if (!path.exists())
-			throw Exception("Filesystem", "directory '%1' doesnt exist") % path.absolutePath();
-		addFromSubnotesDir(path, nullptr);
+		subNotes_.clear();
+		boost::filesystem::path path(p.toUtf8());
+		if (!exists(path))
+			throw RecoverableException(QCoreApplication::translate("Filesystem", "directory '%1' doesnt exist").arg(p));
+		name_ = p;
+		addFromSubnotesDir(path);
 	}
 	catch(...){
 		subNotes_.clear();
@@ -104,42 +108,36 @@ void Note::createHierarchyFromRoot(const QDir &path)
 	}
 }
 
-
-void Note::noteTextFile(const QFileInfo &fi, Note *parent)
+void Note::createFromNoteTextFile(const path &fi)
 {
-	parent_ = parent;
-	textPathname_ = fi;
-	path_ = fi.absolutePath() + "/";
-	auto name = textPathname_.fileName();
-	ASSERT(name.endsWith(Note::fileExt()));
-	name.truncate(name.length() - std::strlen(Note::fileExt()));
-	auto subDir = QDir{textPathname_.dir().absolutePath() + "/" + name};
-	if (subDir.exists())
-		addFromSubnotesDir(subDir, parent);
-	else
-		name_ = DecodeFromFilename(name);
-	auto attachDir = QDir{subDir.absolutePath().append(attachExt)};
-	if (attachDir.exists())
-		attachDir_ = attachDir;
+	path name = fi.filename();
+	ASSERT(name.extension() == Note::textExt);
+	name = name.stem();
+	name_ = decodeFromFilename(name);
+	path subDir = subNotesDir();
+	if (exists(subDir))
+		addFromSubnotesDir(subDir);
 }
 
-void Note::move(const QString &newPath, const QString &newFileName)
+void Note::move(const boost::filesystem::path &newPath, const boost::filesystem::path &newFileName)
 {
-	ASSERT(newPath.endsWith("/"));
-	if (hasText()){
-		QFileInfo newPathname(newPath + newFileName + fileExt());
-		Rename( textPathname_.absoluteFilePath(), newPathname.absoluteFilePath() );
-		textPathname_ = newPathname;
+	ASSERT(is_directory(newPath));
+	auto textFile = textPathname();
+	if (exists(textFile)){
+		path newTexFile = newPath / newFileName;
+		newTexFile += textExt;
+		rename(textFile, newTexFile);
 	}
-	if (subDir_.path() != "."){
-		QDir newSubDir(newPath + newFileName);
-		Rename(subDir_.absolutePath(), newSubDir.absolutePath());
-		subDir_ = newSubDir;
+	auto subDir = subNotesDir();
+	if (exists(subDir)){
+		path newSubDir = newPath / newFileName;
+		rename(subDir, newSubDir);
 	}
-	if (hasAttach()){
-		QDir newAttachDir(newPath + newFileName + attachExt);
-		Rename(attachDir_.absolutePath(), newAttachDir.absolutePath());
-		attachDir_ = newAttachDir;
+	auto attach = attachDir();
+	if (exists(attach)){
+		path newAttachDir = newPath / newFileName;
+		newAttachDir += attachExt;
+		rename(attach, newAttachDir);
 	}
 }
 
@@ -152,20 +150,45 @@ void Note::sortSubnotes()
 
 void Note::adopt_(Note *n)
 {
+	if (n == this)
+		throw Exception(QCoreApplication::translate("Note moving", "Can't add as subnote to self. (%1)").arg(name_));
+	ensureSubDirExist();
+	n->move(subNotesDir(), encodeToFilename(n->name_));
 	Note *prevParent = n->parent_;
-	n->parent_ = this;
 	auto prevParentNdx = prevParent->findIndexOf(n);
 	subNotes_.push_back(std::move(prevParent->subNotes_[prevParentNdx]));
+	n->parent_ = this;
 	auto it = prevParent->subNotes_.begin() + prevParentNdx;
 	prevParent->subNotes_.erase(it, it+1);
-	subDir_ = QDir(path_ + EncodeToFilename(name_));
-	QString subDirPath = subDir_.absolutePath() +"/";
-	if (!subDir_.mkpath(subDirPath))
-		throw Exception("Filesystem", "Can't create directory '%1'") % subDirPath;
-	subNotes_.back()->move(subDirPath, EncodeToFilename(n->name_) );
-	if (RemoveIfEmpty(prevParent->subDir_))
-		prevParent->subDir_ = QDir();
+	prevParent->cleanUpFileSystem();
 }
+
+void Note::cleanUpFileSystem()
+{
+	auto subDir = subNotesDir();
+	auto textFile = textPathname();
+	auto attach = attachDir();
+	if (exists(subDir) && boost::filesystem::is_empty(subDir) && exists(textFile))
+		remove(subDir);
+	if (exists(textFile) && boost::filesystem::is_empty(textFile) && exists(subDir))
+		remove(textFile);
+	if (exists(attach) && boost::filesystem::is_empty(attach))
+		remove(attach);
+}
+
+void Note::ensureSubDirExist()
+{
+	auto subDir = subNotesDir();
+	if (exists(subDir))
+		return;
+	create_directory(subDir);
+}
+
+//std::unique_ptr<boost::filesystem::fstream>  Note::openText()
+//{
+//	return std::make_unique<boost::filesystem::fstream>(
+//		textPathname(), ios_base::in | ios_base::trunc | ios_base::binary);
+//}
 
 bool Note::hasSubnotes() const
 {
@@ -174,29 +197,90 @@ bool Note::hasSubnotes() const
 
 bool Note::hasText() const
 {
-	return !textPathname_.filePath().isEmpty();
+	return exists(textPathname());
+}
+
+bool Note::hasAttach() const
+{
+	return exists(attachDir());
 }
 
 void Note::adopt(Note *n)
 {
+	QString name = n->name();
+	if (exist(name)){
+		throw RecoverableException(
+			QCoreApplication::translate(
+			"notes moving",
+			"'%1' already exist there").arg(name));
+	}
 	adopt_(n);
 	sortSubnotes();
 }
 
 void Note::adopt(std::vector<Note *> &&list)
 {
-	std::sort(list.begin(), list.end(), [](const Note *a, const Note *b){
-		return a->hierarchyDepth() > b->hierarchyDepth();
-	});
+	std::set<QString> uniquenessCheck;
+	for (const Note *n : list){
+		QString name = n->name();
+		if (exist(name) || uniquenessCheck.find(name) != uniquenessCheck.end()){
+			auto e = RecoverableException(
+				QCoreApplication::translate(
+				"notes moving",
+				"Note names have to be unique in the subnotes list. '%1' is not.\n").arg(name));
+			if (n->hierarchyDepth() > 1)
+				e.append(
+					QCoreApplication::translate(
+					"notes moving",
+					"It came from '%1'.\n").arg(n->makePathName()));
+			throw e;
+		}
+		uniquenessCheck.insert(name);
+	}
 	for (auto n : list)
 		adopt_(n);
 	sortSubnotes();
 }
 
-bool Note::hasAttach() const
+Note* Note::createSubnote(const QString &name)
 {
-	auto p = attachDir_.path();
-	return  p != ".";
+	ensureSubDirExist();
+	std::unique_ptr<Note> subNote(new Note());
+	subNote->parent_ = this;
+	subNote->name_ = name;
+	boost::filesystem::fstream(
+			subNote->textPathname(), ios_base::in | ios_base::trunc | ios_base::binary);
+	Note *n = subNote.get();
+	subNotes_.push_back(std::move(subNote));
+	sortSubnotes();
+	return n;
+}
+
+path Note::pathToNote() const
+{
+	if (parent_){
+		if (parent_->parent_)
+			return parent_->pathToNote() / encodeToFilename(parent_->name_);
+		else
+			return parent_->pathToNote(); // since name_ field in root has different meaning
+	}
+	else
+		return path(name_.toUtf8());
+}
+
+boost::filesystem::path Note::attachDir() const
+{
+	return pathToNote() / encodeToFilename(name_+attachExt);
+}
+
+boost::filesystem::path Note::subNotesDir() const
+{
+	return pathToNote() / encodeToFilename(name_);
+}
+
+boost::filesystem::path Note::textPathname() const
+{
+	return pathToNote() / encodeToFilename(name_+textExt);
 }
 
 size_t Note::findIndexOf(const Note *n) const
@@ -246,8 +330,13 @@ void Note::name(const QString &name)
 {
 	if (name == name_)
 		return;
-	QString filename = EncodeToFilename(name);
-	move(path_, filename);
+	if (parent_->exist(name)){
+		throw RecoverableException(
+			QCoreApplication::translate(
+			"notes renaming",
+			"'%1' already exist there.\n").arg(name));
+	}
+	move(pathToNote(), encodeToFilename(name));
 	name_ = name;
 	parent_->sortSubnotes();
 }

@@ -1,9 +1,14 @@
 #include "Exceptions.h"
 
 
-Exception::Exception(const char *translationContext, const char *message)
+Exception::Exception(QString &&msg)
 {
-	msg_ = QCoreApplication::translate(translationContext, message);
+	msg_ = std::move(msg);
+}
+
+void Exception::append(const QString &someMore)
+{
+	msg_.append(someMore);
 }
 
 const char *Exception::what() const noexcept
@@ -15,4 +20,26 @@ const char *Exception::what() const noexcept
 		return "Exception:: not enough memory to even format the string";
 	}
 	return what_.data();
+}
+
+bool isRecoverable(const std::exception &e)
+{
+	if (dynamic_cast<const RecoverableException*>(&e))
+		return true;
+	try {
+		std::rethrow_if_nested(e);
+	} catch(const std::exception& e) {
+		return isRecoverable(e);
+	}
+	return false;
+}
+
+bool isRecoverable(std::exception_ptr ep)
+{
+	try{
+		std::rethrow_exception(ep);
+	}
+	catch(const std::exception &e){
+		return isRecoverable(e);
+	}
 }

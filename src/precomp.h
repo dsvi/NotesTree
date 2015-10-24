@@ -7,6 +7,10 @@
 #include <QApplication>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QStringBuilder>
+
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 #include <exception>
 #include <memory>

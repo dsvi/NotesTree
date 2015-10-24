@@ -6,7 +6,9 @@ QT += widgets
 CONFIG += precompile_header
 CONFIG += c++14
 
-#QMAKE_CXXFLAGS += -std=c++14
+QMAKE_CXXFLAGS += -stdlib=libc++
+QMAKE_LFLAGS   += -stdlib=libc++
+LIBS += -lboost_filesystem -lboost_system
 
 CONFIG(debug, debug|release) {
   DEFINES += DEBUG
@@ -20,7 +22,6 @@ SOURCES += \
     src/NotesTreeModel.c++ \
     src/MainWindow.c++ \
     src/App.c++ \
-    src/FileSystem.c++ \
     src/Exceptions.c++
 
 RESOURCES += res/qml.qrc
@@ -35,7 +36,6 @@ HEADERS +=  src/precomp.h \
     src/NotesTreeModel.h \
     src/MainWindow.h \
     src/App.h \
-    src/FileSystem.h \
     src/Exceptions.h \
     src/ByteArraySerializer.h
 

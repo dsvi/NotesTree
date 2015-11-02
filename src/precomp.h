@@ -5,6 +5,8 @@
 #include <QtGui>
 #include <QtDebug>
 #include <QApplication>
+#include <QAction>
+#include <QAbstractItemView>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QStringBuilder>

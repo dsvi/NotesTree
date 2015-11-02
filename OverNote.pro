@@ -4,10 +4,10 @@ OBJECTS_DIR = ./tmp
 #TARGET =
 QT += widgets
 CONFIG += precompile_header
-CONFIG += c++14
+#CONFIG += c++14
 
-QMAKE_CXXFLAGS += -stdlib=libc++
-QMAKE_LFLAGS   += -stdlib=libc++
+QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++14
+QMAKE_LFLAGS   += -stdlib=libc++ -std=c++14
 LIBS += -lboost_filesystem -lboost_system
 
 CONFIG(debug, debug|release) {
@@ -22,7 +22,9 @@ SOURCES += \
     src/NotesTreeModel.c++ \
     src/MainWindow.c++ \
     src/App.c++ \
-    src/Exceptions.c++
+    src/Exceptions.c++ \
+    src/NotesTreeActions.c++ \
+    src/AddNewNoteDialog.c++
 
 RESOURCES += res/qml.qrc
 
@@ -37,8 +39,11 @@ HEADERS +=  src/precomp.h \
     src/MainWindow.h \
     src/App.h \
     src/Exceptions.h \
-    src/ByteArraySerializer.h
+    src/ByteArraySerializer.h \
+    src/NotesTreeActions.h \
+    src/AddNewNoteDialog.h
 
-FORMS    += src/MainWindow.ui
+FORMS    += src/MainWindow.ui \
+    src/AddNewNoteDialog.ui
 
 

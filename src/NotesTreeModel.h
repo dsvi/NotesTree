@@ -31,17 +31,28 @@ public:
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 
+	Note *noteAt(const QModelIndex &);
+
 signals:
-	void modelChanged();
+
 
 public slots:
 	void rootPath(QString path);
 	/// if parentNote invalid, than add to root
-	void addNote(QModelIndex parentNote, const QString &name);
+	void addNote(const QModelIndex &parentNote, const QString &name);
+	void removeNotes(const QModelIndexList &noteNdx);
 
 private:
 	Note root_;
 	QString mimeType_ = "application/x.overnote-note";
 };
+
+
+inline
+Note *NotesTreeModel::noteAt(const QModelIndex &noteNdx)
+{
+	Note *note = static_cast<Note*>(noteNdx.internalPointer());
+	return note;
+}
 
 #endif // NOTESTREEMODEL_H

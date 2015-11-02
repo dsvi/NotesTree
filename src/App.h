@@ -7,6 +7,10 @@ class App : public QObject
 public:
 	explicit App(QObject *parent = 0);
 
+	/// can easily be null
+	QMainWindow *mainWindow();
+	void mainWindow(QMainWindow *mainWnd);
+
 signals:
 	// thread safe way
 	void showErrorDilog(std::exception_ptr e);
@@ -16,7 +20,22 @@ signals:
 	void error(std::exception_ptr e);
 public slots:
 	void showErrorDilogSlot(std::exception_ptr e);
+
+private:
+	QMainWindow *mainWnd_;
 };
+
+inline
+QMainWindow *App::mainWindow()
+{
+	return mainWnd_;
+}
+
+inline
+void App::mainWindow(QMainWindow *mainWnd)
+{
+	mainWnd_ = mainWnd;
+}
 
 extern
 App *app;

@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "NotesTreeModel.h"
+#include "NotesTreeActions.h"
 
 namespace Ui {
 class MainWindow;
@@ -17,7 +18,8 @@ public:
 
 private:
 	Ui::MainWindow *ui;
-  NotesTreeModel  notesTreeModel;
+	NotesTreeModel  notesTreeModel;
+	std::unique_ptr<NotesTreeActions> notesTreeActions_;
 };
 
 #endif // MAINWINDOW_H

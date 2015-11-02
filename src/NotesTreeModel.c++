@@ -1,6 +1,8 @@
 #include "NotesTreeModel.h"
 #include "ByteArraySerializer.h"
 
+using namespace std;
+
 NotesTreeModel::NotesTreeModel(QObject *parent)
 	: QAbstractItemModel(parent)
 {
@@ -158,22 +160,52 @@ int NotesTreeModel::columnCount(const QModelIndex &parent) const
 
 void NotesTreeModel::rootPath(QString path)
 {
+	beginResetModel();
 	try{
 		root_.createHierarchyFromRoot(path);
 	}
 	catch(...){
 		emit app->showErrorDilog(std::current_exception());
 	}
-	emit modelChanged();
+	endResetModel();
 }
 
-void NotesTreeModel::addNote(QModelIndex parentNote, const QString &name)
+void NotesTreeModel::addNote(const QModelIndex &parentNote, const QString &name)
 {
-	const Note *parent;
-	if (parentNote.isValid())
-		parent = static_cast<Note*>(parentNote.internalPointer());
-	else
-		parent = &root_;
+	layoutAboutToBeChanged();
+	try{
+		Note *parent;
+		if (parentNote.isValid())
+			parent = noteAt(parentNote);
+		else
+			parent = &root_;
+		parent->createSubnote(name);
+	}
+	catch(...){
+		emit app->error(std::current_exception());
+	}
+	layoutChanged();
+}
+
+void NotesTreeModel::removeNotes(const QModelIndexList &noteNdx)
+{
+	try{
+		vector<Note*> notes;
+		for (const auto &ndx : noteNdx){
+			ASSERT(ndx.isValid());
+			beginRemoveRows(ndx.parent(), ndx.row(), ndx.row());
+			endRemoveRows();
+			notes.push_back(noteAt(ndx));
+		}
+		std::sort(notes.begin(), notes.end(),[](const auto a, const auto b){
+			return a->hierarchyDepth() > b->hierarchyDepth();
+		});
+		for (auto &note : notes)
+			note->parent()->deleteRecursively(note);
+	}
+	catch(...){
+		emit app->error(std::current_exception());
+	}
 }
 
 

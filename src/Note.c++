@@ -20,7 +20,7 @@ QString Note::decodeFromFilename(const boost::filesystem::path &filename)
 			for (int i = 2; --i >= 0;){
 				if (++c == fn.end()){
 					throw Exception(QCoreApplication::translate(
-						"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
+														"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
 				}
 				num += *c;
 			}
@@ -28,7 +28,7 @@ QString Note::decodeFromFilename(const boost::filesystem::path &filename)
 			int code = num.toInt(&ok, 16);
 			if (!ok){
 				throw Exception(QCoreApplication::translate(
-					"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
+													"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
 			}
 			ret += QChar(code);
 		}
@@ -74,7 +74,7 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 		QString name = fi.path().filename().c_str();
 		if (!name.endsWith(Note::textExt))
 			continue;
-		std::unique_ptr<Note> note(new Note());
+		auto note = make_unique<Note>();
 		note->parent_ = this;
 		note->createFromNoteTextFile(fi.path());
 		dirs.erase(encodeToFilename(note->name()).c_str());
@@ -84,12 +84,23 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 		const boost::filesystem::path &dirPath = dir.second.path();
 		if (QString(dirPath.filename().c_str()).endsWith(attachExt))
 			continue;
-		std::unique_ptr<Note> subNote(new Note());
+		auto subNote = make_unique<Note>();
 		subNote->parent_ = this;
 		subNote->addFromSubnotesDir(dirPath);
 		subNotes_.push_back(std::move(subNote));
 	}
 	sortSubnotes();
+}
+
+void Note::createFromNoteTextFile(const path &fi)
+{
+	path name = fi.filename();
+	ASSERT(name.extension() == Note::textExt);
+	name = name.stem();
+	name_ = decodeFromFilename(name);
+	path subDir = subNotesDir();
+	if (exists(subDir))
+		addFromSubnotesDir(subDir);
 }
 
 void Note::createHierarchyFromRoot(const QString &p)
@@ -106,17 +117,6 @@ void Note::createHierarchyFromRoot(const QString &p)
 		subNotes_.clear();
 		throw;
 	}
-}
-
-void Note::createFromNoteTextFile(const path &fi)
-{
-	path name = fi.filename();
-	ASSERT(name.extension() == Note::textExt);
-	name = name.stem();
-	name_ = decodeFromFilename(name);
-	path subDir = subNotesDir();
-	if (exists(subDir))
-		addFromSubnotesDir(subDir);
 }
 
 void Note::move(const boost::filesystem::path &newPath, const boost::filesystem::path &newFileName)
@@ -165,6 +165,8 @@ void Note::adopt_(Note *n)
 
 void Note::cleanUpFileSystem()
 {
+	if ( parent_ == nullptr ) //nothing to clean up at root
+		return;
 	auto subDir = subNotesDir();
 	auto textFile = textPathname();
 	auto attach = attachDir();
@@ -245,15 +247,34 @@ void Note::adopt(std::vector<Note *> &&list)
 Note* Note::createSubnote(const QString &name)
 {
 	ensureSubDirExist();
-	std::unique_ptr<Note> subNote(new Note());
+	auto subNote = make_unique<Note>();
 	subNote->parent_ = this;
 	subNote->name_ = name;
 	boost::filesystem::fstream(
-			subNote->textPathname(), ios_base::in | ios_base::trunc | ios_base::binary);
+		subNote->textPathname(), ios_base::out | ios_base::binary);
 	Note *n = subNote.get();
 	subNotes_.push_back(std::move(subNote));
 	sortSubnotes();
 	return n;
+}
+
+void Note::deleteRecursively(Note *child)
+{
+	auto name = child->name();
+	try{
+		auto subDir = child->subNotesDir();
+		auto textFile = child->textPathname();
+		auto attach = child->attachDir();
+		remove_all(subDir);
+		remove(textFile);
+		remove_all(attach);
+		auto ndx = findIndexOf(child);
+		subNotes_.erase(subNotes_.begin() + ndx);
+	}
+	catch(...){
+		throw_with_nested(Exception(QCoreApplication::translate(
+			"note deletion error", "Can't delete note '%1':").arg(name)));
+	}
 }
 
 path Note::pathToNote() const

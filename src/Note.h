@@ -28,6 +28,7 @@ public:
 
 	/// create hierarchy of notes and subnotes from the root folder
 	/// this note becames root of the hierarchy
+	/// exception safe
 	void createHierarchyFromRoot(const QString &path);
 
 	/// add the file as attached to the note
@@ -42,13 +43,14 @@ public:
 
 	/// adds the note as child to this, removes it from prev parent.
 	/// make sure the note with the same name doesn't exist here already, before adopting another one.
+	/// or RecoverableException happens
 	/// \sa exist
 	void adopt(Note *n);
 	/// same as above, but adds a lot at a time
-	/// the list shall not contain notes with the same names or names of subnotes to this one.
 	void adopt(std::vector<Note*> &&list);
 
 	Note *createSubnote(const QString &name);
+	void deleteRecursively(Note *child);
 
 signals:
 public slots:

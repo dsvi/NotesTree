@@ -1,28 +1,36 @@
 #ifndef PRECOMP_H
 #define PRECOMP_H
 
-#include <QtCore>
-#include <QtGui>
-#include <QtDebug>
-#include <QApplication>
-#include <QAction>
 #include <QAbstractItemView>
+#include <QAction>
+#include <QApplication>
+#include <QBoxLayout>
 #include <QMainWindow>
+#include <QMenu>
 #include <QMessageBox>
 #include <QStringBuilder>
+#include <QtCore>
+#include <QtDebug>
+#include <QtGui>
+#include <QToolButton>
+#include <QWebFrame>
+#include <QWebView>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
-#include <exception>
-#include <memory>
-#include <vector>
-#include <stack>
-#include <set>
-#include <unordered_set>
-#include <unordered_map>
+#include <atomic>
 #include <cstring>
+#include <exception>
+#include <functional>
+#include <iostream>
 #include <memory>
+#include <memory>
+#include <set>
+#include <stack>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "App.h"
 #include "Exceptions.h"
@@ -65,16 +73,10 @@ typedef uint32_t                 ui32;
 /// Unsigned 64-bit integer
 typedef uint64_t                 ui64;
 
+inline
+QString toQS(const boost::filesystem::path &p){
+	return QString::fromStdWString(p.wstring());
+}
+
 #endif // PRECOMP_H
 
-// shit below is to fix QtCreator clang autocompletion
-//#define _GLIBCXX_BEGIN_NAMESPACE(name) namespace name {
-//#define _GLIBCXX_END_NAMESPACE }
-//#define _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
-//#define _GLIBCXX_END_NAMESPACE_CONTAINER
-//#define _GLIBCXX_END_NAMESPACE_VERSION
-//#define _GLIBCXX_BEGIN_NAMESPACE_VERSION
-//#define __glibcxx_function_requires(...)
-//#define __try try
-//#define __catch catch
-//#define __cplusplus 999999L

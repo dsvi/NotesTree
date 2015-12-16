@@ -6,7 +6,16 @@ using namespace std;
 NotesTreeModel::NotesTreeModel(QObject *parent)
 	: QAbstractItemModel(parent)
 {
+}
 
+void NotesTreeModel::root(Note *root)
+{
+	root_ = make_unique<NoteInTree>(shared_ptr<Note>(root,[](auto){}), thread());
+	root_->model = this;
+	root_->parent = nullptr;
+	rootNote_ = root;
+	connect(rootNote_, &Note::clear, this, &NotesTreeModel::clear);
+	connect(this, &NotesTreeModel::deleteRecursively, rootNote_, &Note::deleteRecursively);
 }
 
 
@@ -14,13 +23,10 @@ QVariant NotesTreeModel::data(const QModelIndex &index, int role) const
 {
 	if (!index.isValid())
 		return QVariant();
-
 	if (role != Qt::DisplayRole && role != Qt::EditRole)
 		return QVariant();
-
-	Note *item = static_cast<Note*>(index.internalPointer());
-
-	return item->name();
+	NoteInTree *item = noteAt(index);
+	return item->name;
 }
 
 bool NotesTreeModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -28,16 +34,9 @@ bool NotesTreeModel::setData(const QModelIndex &index, const QVariant &value, in
 	if (role != Qt::EditRole)
 		return false;
 
-	try{
-		Note *item = static_cast<Note*>(index.internalPointer());
-		item->name(value.toString());
-	}
-	catch(...){
-		emit app->error(std::current_exception());
-		return false;
-	}
+	NoteInTree *item = noteAt(index);
+	item->changeName(value.toString());
 
-	emit dataChanged(index, index, QVector<int>{Qt::DisplayRole});
 	return true;
 }
 
@@ -57,7 +56,7 @@ QMimeData *NotesTreeModel::mimeData(const QModelIndexList &indexes) const
 	ByteArraySerializer bs(&ba);
 	bs.add(indexes.size());
 	for (auto &ndx : indexes){
-		Note *note = static_cast<Note*>(ndx.internalPointer());
+		NoteInTree *note = noteAt(ndx);
 		bs.add(note);
 	}
 	QMimeData *ret = new QMimeData();
@@ -70,34 +69,26 @@ bool NotesTreeModel::dropMimeData(const QMimeData *data, Qt::DropAction action, 
 	Q_UNUSED(row)
 	Q_UNUSED(column)
 	ASSERT(action == Qt::MoveAction);
-	layoutAboutToBeChanged();
-	try{
-		Note *parentNote;
-		if (!parent.isValid())
-			parentNote = &root_;
-		else
-			parentNote = static_cast<Note*>(parent.internalPointer());
-		auto ba = data->data(mimeType_);
-		ByteArrayDeSerializer bd(&ba);
-		decltype(ba.size()) numNotes;
-		bd.get(numNotes);
-		std::vector<Note*> list;
-		for (int num = 0; num < numNotes; ++num){
-			Note *n;
-			bd.get(n);
-			list.push_back(n);
-		}
-		parentNote->adopt(std::move(list));
+	NoteInTree *parentNote = noteAt(parent);
+	auto ba = data->data(mimeType_);
+	ByteArrayDeSerializer bd(&ba);
+	decltype(ba.size()) numNotes;
+	bd.get(numNotes);
+	std::vector<weak_ptr<Note>> list;
+	for (int num = 0; num < numNotes; ++num){
+		NoteInTree *n;
+		bd.get(n);
+		list.push_back(n->note);
 	}
-	catch(...){
-		app->error(std::current_exception());
-	}
-	layoutChanged();
+	parentNote->adopt(list);
 	return true;
 }
 
-Qt::ItemFlags NotesTreeModel::flags(const QModelIndex &) const
+Qt::ItemFlags NotesTreeModel::flags(const QModelIndex &index) const
 {
+	if (!index.isValid())
+			return 0;
+
 	return
 	Qt::ItemIsSelectable  |
 	Qt::ItemIsEditable    |
@@ -112,44 +103,27 @@ QModelIndex NotesTreeModel::index(int row, int column, const QModelIndex &parent
 	if (!hasIndex(row, column, parent))
 		return QModelIndex();
 
-	const Note *parentItem;
+	const NoteInTree *parentItem = noteAt(parent);
 
-	if (!parent.isValid())
-		parentItem = &root_;
-	else
-		parentItem = static_cast<Note*>(parent.internalPointer());
-
-	const Note *childItem = parentItem->child(row);
-	if (childItem)
-		return createIndex(row, column, (void*)childItem);
-	else
-		return QModelIndex();
+	ASSERT((size_t) row < parentItem->children.size());
+	NoteInTree *childItem = parentItem->children[row].get();
+	childItem->mdlNdx = createIndex(row, column, childItem);
+	ASSERT(childItem->mdlNdx.isValid());
+	return childItem->mdlNdx;
 }
 
 QModelIndex NotesTreeModel::parent(const QModelIndex &index) const
 {
-	if (!index.isValid())
+	NoteInTree *childItem = noteAt(index);
+	if (childItem == root_.get())
 		return QModelIndex();
-
-	Note *childItem = static_cast<Note*>(index.internalPointer());
-	Note *parentItem = childItem->parent();
-
-	if (parentItem == &root_)
-		return QModelIndex();
-
-	return createIndex(parentItem->findIndexOf(childItem), 0, parentItem);
+	return childItem->parent->mdlNdx;
 }
 
 int NotesTreeModel::rowCount(const QModelIndex &parent) const
 {
-	const Note *parentItem;
-
-	if (!parent.isValid())
-		parentItem = &root_;
-	else
-		parentItem = static_cast<Note*>(parent.internalPointer());
-
-	return parentItem->numChildren();
+	const NoteInTree *parentItem = noteAt(parent);
+	return parentItem->children.size();
 }
 
 int NotesTreeModel::columnCount(const QModelIndex &parent) const
@@ -158,54 +132,88 @@ int NotesTreeModel::columnCount(const QModelIndex &parent) const
 	return 1;
 }
 
-void NotesTreeModel::rootPath(QString path)
+void NotesTreeModel::clear()
 {
 	beginResetModel();
-	try{
-		root_.createHierarchyFromRoot(path);
-	}
-	catch(...){
-		emit app->showErrorDilog(std::current_exception());
-	}
+	root_->children.clear();
 	endResetModel();
 }
 
 void NotesTreeModel::addNote(const QModelIndex &parentNote, const QString &name)
 {
-	layoutAboutToBeChanged();
-	try{
-		Note *parent;
-		if (parentNote.isValid())
-			parent = noteAt(parentNote);
-		else
-			parent = &root_;
-		parent->createSubnote(name);
-	}
-	catch(...){
-		emit app->error(std::current_exception());
-	}
-	layoutChanged();
+	NoteInTree *parent = noteAt(parentNote);
+	parent->createSubnote(name);
 }
 
 void NotesTreeModel::removeNotes(const QModelIndexList &noteNdx)
 {
-	try{
-		vector<Note*> notes;
-		for (const auto &ndx : noteNdx){
-			ASSERT(ndx.isValid());
-			beginRemoveRows(ndx.parent(), ndx.row(), ndx.row());
-			endRemoveRows();
-			notes.push_back(noteAt(ndx));
-		}
-		std::sort(notes.begin(), notes.end(),[](const auto a, const auto b){
-			return a->hierarchyDepth() > b->hierarchyDepth();
-		});
-		for (auto &note : notes)
-			note->parent()->deleteRecursively(note);
+	vector<std::weak_ptr<Note>> notes;
+	for (const auto &ndx : noteNdx){
+		ASSERT(ndx.isValid());
+		notes.push_back(noteAt(ndx)->note);
 	}
-	catch(...){
-		emit app->error(std::current_exception());
-	}
+	emit deleteRecursively(notes);
+}
+
+NoteInTree::NoteInTree(std::weak_ptr<Note> n, QThread *viewThread) : QObject(nullptr)
+{
+	this->moveToThread(viewThread);
+	auto ns = n.lock();
+	ASSERT(ns);
+	auto note = ns.get();
+	this->name = note->name();
+	this->note = n;
+	connect(this, &NoteInTree::changeName, note, &Note::changeName);
+	connect(note, &Note::nameChanged, this, &NoteInTree::nameChanged);
+
+	connect(this, &NoteInTree::adopt, note, &Note::adopt);
+	connect(this, &NoteInTree::createSubnote, note, &Note::createSubnote);
+
+	connect(note, &Note::noteAdded, [=](weak_ptr<Note> mn){
+		auto vn = make_shared<NoteInTree>(mn, viewThread);
+		QMetaObject::invokeMethod(this, "addSubnote", Qt::QueuedConnection, Q_ARG(std::shared_ptr<NoteInTree>, vn));
+	});
+	connect(note, &Note::noteRemoved, this, &NoteInTree::removeThis);
+}
+
+void NoteInTree::addSubnote(std::shared_ptr<NoteInTree> n)
+{
+	model->layoutAboutToBeChanged();
+	children.emplace_back(n);
+	auto newNote = children.back().get();
+	newNote->model = model;
+	newNote->parent = this;
+	sortKids();
+	model->layoutChanged();
+}
+
+void NoteInTree::removeThis()
+{
+	if ( this == model->root_.get() )
+		return;
+	model->beginRemoveRows(mdlNdx.parent(), mdlNdx.row(), mdlNdx.row());
+	auto &l = parent->children;
+	auto it = find_if(l.begin(), l.end(), [&](auto &p){return p.get() == this;});
+	ASSERT(it != l.end());
+	auto tmp = *it;
+	l.erase(it);
+	model->endRemoveRows();
+}
+
+void NoteInTree::nameChanged(const QString &name)
+{
+	this->name = name;
+	model->dataChanged(mdlNdx, mdlNdx, QVector<int>{Qt::DisplayRole});
+	model->layoutAboutToBeChanged();
+	parent->sortKids();
+	model->layoutChanged();
+}
+
+void NoteInTree::sortKids()
+{
+	std::sort(children.begin(), children.end(), [](const auto &a, const auto &b){
+		return a->name < b->name;
+	});
 }
 
 

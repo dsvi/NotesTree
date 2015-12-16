@@ -24,5 +24,6 @@ public:
 		Exception(std::move(msg)){};
 };
 
+Q_DECLARE_METATYPE(std::exception_ptr)
 
 #endif // EXCEPTIONS_H

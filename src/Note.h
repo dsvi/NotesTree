@@ -1,19 +1,60 @@
 #ifndef NOTE_H
 #define NOTE_H
 
-class Note
+
+class Note : public QObject
 {
+	Q_OBJECT
 public:
 	Note();
+	~Note();
+	QString name() const;
+signals:
+	// signaled by root only
+	void clear();
+	void noteAdded(std::weak_ptr<Note> n);
+	void noteRemoved();
+	void nameChanged(const QString &name);
+	void noteTextRdy(const QString &txt);
 
-	/// nullptr means this is root
-	Note *parent();
-	const Note *parent() const;
+public slots:
+
+	/// create hierarchy of notes and subnotes from the root folder
+	/// this note becames root of the hierarchy
+	void createHierarchyFromRoot(const QString &path);
+	void changeName(const QString &name);
+
+	/// adds the notes as child to this, removes it from prev parent.
+	/// when note with the same name exists here already, or was added in the process, RecoverableException is thrown
+	void adopt(const std::vector<std::weak_ptr<Note>> &list);
+
+	void createSubnote(const QString &name);
+	void deleteRecursively(const std::vector<std::weak_ptr<Note> > &list);
+
+	void save(const QString &txt);
+	void load();
+private:
+	Note     *parent_ = nullptr; 	/// nullptr means this is root
+	QString		name_; // root has path to root here, instead of name
+	bool      isZombie(){  // the method is only valid for root
+		return name_.isNull();
+	}
+	std::vector<std::shared_ptr<Note>> subNotes_;
+
+	boost::filesystem::path pathToNote() const;
+
+	/// populate list of subnotes and the name from the @path dir
+	void addFromSubnotesDir(const boost::filesystem::path &path);
+	/// pathname should end on textExt
+	void createFromNoteTextFile(const boost::filesystem::path &textPathname);
+	void move(const boost::filesystem::path &newPath, const boost::filesystem::path &newFileName);
+	void adopt_(const std::shared_ptr<Note> &n);
+	void cleanUpFileSystem();
+	void ensureSubDirExist();
 	size_t numChildren() const;
 	Note *child(size_t ndx);
 	const Note *child(size_t ndx) const;
 	size_t findIndexOf(const Note *) const;
-
 	/// true if a subnote with such name already here
 	bool exist(const QString &name);
 	/// returns the full path in hierarchy to this note, not including its name.
@@ -22,14 +63,6 @@ public:
 	QString makePathName(const QString separator = u8"⮕") const;
 	/// returns number of parent nodes to this one. including root
 	int hierarchyDepth() const;
-
-	QString name() const;
-	void name(const QString &name);
-
-	/// create hierarchy of notes and subnotes from the root folder
-	/// this note becames root of the hierarchy
-	/// exception safe
-	void createHierarchyFromRoot(const QString &path);
 
 	/// add the file as attached to the note
 	void attach(const QFileInfo &fi);
@@ -41,38 +74,16 @@ public:
 	boost::filesystem::path subNotesDir() const;
 	boost::filesystem::path textPathname() const;
 
-	/// adds the note as child to this, removes it from prev parent.
-	/// make sure the note with the same name doesn't exist here already, before adopting another one.
-	/// or RecoverableException happens
-	/// \sa exist
-	void adopt(Note *n);
-	/// same as above, but adds a lot at a time
-	void adopt(std::vector<Note*> &&list);
+	void error(QString &&msg);
+	void error();
+	/// root of the current hierarchy
+	Note* root();
 
-	Note *createSubnote(const QString &name);
-	void deleteRecursively(Note *child);
+	void emitAddNoteRecursively(std::shared_ptr<Note> &note);
+	void addNote(std::shared_ptr<Note> note);
+	std::shared_ptr<Note> removeFromParent();
 
-signals:
-public slots:
-private:
-	Note     *parent_ = nullptr;
-	QString		name_; // root has path to root here, instead of name
-
-	std::vector<std::unique_ptr<Note>> subNotes_;
-
-	boost::filesystem::path pathToNote() const;
-
-	/// populate list of subnotes and the name from the @path dir
-	void addFromSubnotesDir(const boost::filesystem::path &path);
-	/// pathname should end on textExt
-	void createFromNoteTextFile(const boost::filesystem::path &textPathname);
-	void move(const boost::filesystem::path &newPath, const boost::filesystem::path &newFileName);
-	void sortSubnotes();
-	void adopt_(Note *n);
-	void cleanUpFileSystem();
-	void ensureSubDirExist();
-	std::unique_ptr<boost::filesystem::fstream> openText();
-	
+	void deleteSelfRecursively();
 
 	static
 	QString decodeFromFilename(const boost::filesystem::path& fn);
@@ -84,17 +95,17 @@ private:
 	const char delimChar = 1;
 	constexpr	static
 	const char *attachExt = delimChar + u8"attach";
+	constexpr	static
+	const char *newFileExt = u8".new";
 };
 
+Q_DECLARE_METATYPE(std::weak_ptr<Note>)
+Q_DECLARE_METATYPE(std::vector<std::weak_ptr<Note>>)
+
 inline
-Note *Note::parent()
+QString Note::name() const
 {
-	return parent_;
-}
-inline
-const Note *Note::parent() const
-{
-	return parent_;
+	return name_;
 }
 
 inline
@@ -113,11 +124,6 @@ const Note *Note::child(size_t ndx) const
 	return subNotes_[ndx].get();
 }
 
-inline
-QString Note::name() const
-{
-	return name_;
-}
 
 
 

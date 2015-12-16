@@ -3,15 +3,45 @@
 
 #include "Note.h"
 
+class NotesTreeModel;
+
+class NoteInTree : public QObject
+{
+	Q_OBJECT
+public:
+	NoteInTree(std::weak_ptr<Note> n, QThread *viewThread);
+	QString name;
+	std::weak_ptr<Note> note;
+	NotesTreeModel *model;
+	QModelIndex     mdlNdx;
+
+	NoteInTree *parent;
+	std::vector<std::shared_ptr<NoteInTree>> children;
+signals:
+	void changeName(const QString &name);
+	void adopt(const std::vector<std::weak_ptr<Note>> &list);
+	void createSubnote(const QString &name);
+	void deleteRecursively();
+public slots:
+	void addSubnote(std::shared_ptr<NoteInTree> n);
+	void removeThis();
+	void nameChanged(const QString &name);
+private:
+	void sortKids();
+};
+
+Q_DECLARE_METATYPE(std::shared_ptr<NoteInTree>)
+
 class NotesTreeModel : public QAbstractItemModel
 {
 	Q_OBJECT
 public:
 	enum Roles {
-		NameRole = Qt::UserRole + 1,
+		NotePtrRole = Qt::UserRole + 1,
 	};
 
 	explicit NotesTreeModel(QObject *parent = nullptr);
+	void root(Note *root);
 
 	// QAbstractItemModel interface
 	QVariant data(const QModelIndex &index, int role) const override;
@@ -31,28 +61,41 @@ public:
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 
-	Note *noteAt(const QModelIndex &);
-
+	NoteInTree *noteAt(const QModelIndex &);
+	NoteInTree *noteAt(const QModelIndex &) const;
 signals:
-
-
+	void deleteRecursively(const std::vector<std::weak_ptr<Note> > &notes);
 public slots:
-	void rootPath(QString path);
+	void clear();
 	/// if parentNote invalid, than add to root
 	void addNote(const QModelIndex &parentNote, const QString &name);
 	void removeNotes(const QModelIndexList &noteNdx);
 
 private:
-	Note root_;
-	QString mimeType_ = "application/x.overnote-note";
+	std::unique_ptr<NoteInTree> root_;
+	Note      *rootNote_;
+	QString mimeType_ = "application/x.treenote-note";
+
+	friend class NoteInTree;
 };
 
 
+
 inline
-Note *NotesTreeModel::noteAt(const QModelIndex &noteNdx)
+NoteInTree *NotesTreeModel::noteAt(const QModelIndex &noteNdx)
 {
-	Note *note = static_cast<Note*>(noteNdx.internalPointer());
+	NoteInTree *note;
+	if (noteNdx.isValid())
+		note = static_cast<NoteInTree*>(noteNdx.internalPointer());
+	else
+		note = root_.get();
 	return note;
+}
+
+inline
+NoteInTree *NotesTreeModel::noteAt(const QModelIndex &noteNdx) const
+{
+	return mut_this->noteAt(noteNdx);
 }
 
 #endif // NOTESTREEMODEL_H

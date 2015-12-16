@@ -9,6 +9,10 @@ Note::Note()
 {
 }
 
+Note::~Note()
+{
+}
+
 QString Note::decodeFromFilename(const boost::filesystem::path &filename)
 {
 	QString ret;
@@ -20,7 +24,7 @@ QString Note::decodeFromFilename(const boost::filesystem::path &filename)
 			for (int i = 2; --i >= 0;){
 				if (++c == fn.end()){
 					throw Exception(QCoreApplication::translate(
-														"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
+						"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
 				}
 				num += *c;
 			}
@@ -28,7 +32,7 @@ QString Note::decodeFromFilename(const boost::filesystem::path &filename)
 			int code = num.toInt(&ok, 16);
 			if (!ok){
 				throw Exception(QCoreApplication::translate(
-													"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
+					"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
 			}
 			ret += QChar(code);
 		}
@@ -74,22 +78,19 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 		QString name = fi.path().filename().c_str();
 		if (!name.endsWith(Note::textExt))
 			continue;
-		auto note = make_unique<Note>();
-		note->parent_ = this;
+		auto note = make_shared<Note>();
 		note->createFromNoteTextFile(fi.path());
-		dirs.erase(encodeToFilename(note->name()).c_str());
-		subNotes_.push_back(std::move(note));
+		dirs.erase(encodeToFilename(note->name_).c_str());
+		addNote(note);
 	}
 	for (auto &dir : dirs){
 		const boost::filesystem::path &dirPath = dir.second.path();
 		if (QString(dirPath.filename().c_str()).endsWith(attachExt))
 			continue;
-		auto subNote = make_unique<Note>();
-		subNote->parent_ = this;
+		auto subNote = make_shared<Note>();
 		subNote->addFromSubnotesDir(dirPath);
-		subNotes_.push_back(std::move(subNote));
+		addNote(subNote);
 	}
-	sortSubnotes();
 }
 
 void Note::createFromNoteTextFile(const path &fi)
@@ -106,7 +107,10 @@ void Note::createFromNoteTextFile(const path &fi)
 void Note::createHierarchyFromRoot(const QString &p)
 {
 	try{
+		ASSERT(parent_ == nullptr);
+		emit clear();
 		subNotes_.clear();
+		name_.clear();
 		boost::filesystem::path path(p.toUtf8());
 		if (!exists(path))
 			throw RecoverableException(QCoreApplication::translate("Filesystem", "directory '%1' doesnt exist").arg(p));
@@ -115,7 +119,8 @@ void Note::createHierarchyFromRoot(const QString &p)
 	}
 	catch(...){
 		subNotes_.clear();
-		throw;
+		name_.clear();
+		app->reportError(std::current_exception());
 	}
 }
 
@@ -141,26 +146,13 @@ void Note::move(const boost::filesystem::path &newPath, const boost::filesystem:
 	}
 }
 
-void Note::sortSubnotes()
+void Note::adopt_(const std::shared_ptr<Note> &n)
 {
-	std::sort(subNotes_.begin(), subNotes_.end(), [](const decltype(subNotes_[0]) &a, const decltype(subNotes_[0]) &b){
-		return a->name() < b->name();
-	});
-}
-
-void Note::adopt_(Note *n)
-{
-	if (n == this)
-		throw Exception(QCoreApplication::translate("Note moving", "Can't add as subnote to self. (%1)").arg(name_));
+	if (n.get() == this)
+		throw Exception(tr("Can't add as subnote to self. (%1)").arg(name_));
 	ensureSubDirExist();
 	n->move(subNotesDir(), encodeToFilename(n->name_));
-	Note *prevParent = n->parent_;
-	auto prevParentNdx = prevParent->findIndexOf(n);
-	subNotes_.push_back(std::move(prevParent->subNotes_[prevParentNdx]));
-	n->parent_ = this;
-	auto it = prevParent->subNotes_.begin() + prevParentNdx;
-	prevParent->subNotes_.erase(it, it+1);
-	prevParent->cleanUpFileSystem();
+	addNote(n->removeFromParent());
 }
 
 void Note::cleanUpFileSystem()
@@ -186,11 +178,59 @@ void Note::ensureSubDirExist()
 	create_directory(subDir);
 }
 
-//std::unique_ptr<boost::filesystem::fstream>  Note::openText()
-//{
-//	return std::make_unique<boost::filesystem::fstream>(
-//		textPathname(), ios_base::in | ios_base::trunc | ios_base::binary);
-//}
+void Note::error(QString &&msg)
+{
+	try{
+		throw_with_nested(Exception(std::move(msg)));
+	}
+	catch(...){
+		error();
+	}
+}
+
+void Note::error()
+{
+	auto e = std::current_exception();
+	if (!isRecoverable(e)){
+		Note *r = root();
+		r->subNotes_.clear(); // zombify!
+		r->name_.clear();
+	}
+	app->error(e);
+}
+
+Note* Note::root()
+{
+	Note *r = this;
+	for (Note *n = parent_; n != nullptr; n = n->parent_)
+		r = n;
+	return r;
+}
+
+void Note::emitAddNoteRecursively(std::shared_ptr<Note> &note)
+{
+	emit noteAdded(note);
+	for (auto &cn : note->subNotes_)
+		note->emitAddNoteRecursively(cn);
+}
+
+void Note::addNote(std::shared_ptr<Note> note)
+{
+	note->parent_ = this;
+	subNotes_.push_back(note);
+	emitAddNoteRecursively(note);
+}
+
+std::shared_ptr<Note> Note::removeFromParent()
+{
+	auto myNdx = parent_->findIndexOf(this);
+	auto ret = parent_->subNotes_[myNdx];
+	auto it = parent_->subNotes_.begin() + myNdx;
+	parent_->subNotes_.erase(it, it+1);
+	parent_->cleanUpFileSystem();
+	emit noteRemoved();
+	return ret;
+}
 
 bool Note::hasSubnotes() const
 {
@@ -207,73 +247,133 @@ bool Note::hasAttach() const
 	return exists(attachDir());
 }
 
-void Note::adopt(Note *n)
+void Note::adopt(const std::vector<std::weak_ptr<Note> > &list)
 {
-	QString name = n->name();
-	if (exist(name)){
-		throw RecoverableException(
-			QCoreApplication::translate(
-			"notes moving",
-			"'%1' already exist there").arg(name));
-	}
-	adopt_(n);
-	sortSubnotes();
-}
-
-void Note::adopt(std::vector<Note *> &&list)
-{
-	std::set<QString> uniquenessCheck;
-	for (const Note *n : list){
-		QString name = n->name();
-		if (exist(name) || uniquenessCheck.find(name) != uniquenessCheck.end()){
-			auto e = RecoverableException(
-				QCoreApplication::translate(
-				"notes moving",
-				"Note names have to be unique in the subnotes list. '%1' is not.\n").arg(name));
-			if (n->hierarchyDepth() > 1)
-				e.append(
-					QCoreApplication::translate(
-					"notes moving",
-					"It came from '%1'.\n").arg(n->makePathName()));
-			throw e;
-		}
-		uniquenessCheck.insert(name);
-	}
-	for (auto n : list)
-		adopt_(n);
-	sortSubnotes();
-}
-
-Note* Note::createSubnote(const QString &name)
-{
-	ensureSubDirExist();
-	auto subNote = make_unique<Note>();
-	subNote->parent_ = this;
-	subNote->name_ = name;
-	boost::filesystem::fstream(
-		subNote->textPathname(), ios_base::out | ios_base::binary);
-	Note *n = subNote.get();
-	subNotes_.push_back(std::move(subNote));
-	sortSubnotes();
-	return n;
-}
-
-void Note::deleteRecursively(Note *child)
-{
-	auto name = child->name();
 	try{
-		auto subDir = child->subNotesDir();
-		auto textFile = child->textPathname();
-		auto attach = child->attachDir();
-		remove_all(subDir);
-		remove(textFile);
-		remove_all(attach);
-		auto ndx = findIndexOf(child);
-		subNotes_.erase(subNotes_.begin() + ndx);
+		std::set<QString> uniquenessCheck;
+		for (auto  np : list){
+			auto n = np.lock();
+			if (!n)
+				continue;
+			QString name = n->name_;
+			if (exist(name) || uniquenessCheck.find(name) != uniquenessCheck.end()){
+				auto e = RecoverableException(tr(
+					"Note names have to be unique in the subnotes list. '%1' is not.\n").arg(name));
+				if (n->hierarchyDepth() > 1)
+					e.append(tr("It came from '%1'.\n").arg(n->makePathName()));
+				throw e;
+			}
+			uniquenessCheck.insert(name);
+		}
+		for (auto n : list)
+			if (!n.expired())
+				adopt_(n.lock());
 	}
 	catch(...){
-		throw_with_nested(Exception(QCoreApplication::translate(
-			"note deletion error", "Can't delete note '%1':").arg(name)));
+		error();
+	}
+}
+
+void Note::createSubnote(const QString &name)
+{
+	if (root()->isZombie())
+		return;
+	try{
+		if (exist(name))
+			throw RecoverableException(
+				tr("Note '%1' already exist here.\n").arg(name));
+		ensureSubDirExist();
+		auto subNote = make_shared<Note>();
+		subNote->parent_ = this;
+		subNote->name_ = name;
+		auto txtPath = subNote->textPathname();
+		if (exists(txtPath))
+			throw RecoverableException(
+				tr("Filename '%1' already exist.\n").arg(QString::fromStdWString(txtPath.wstring())));
+		boost::filesystem::fstream out(
+			subNote->textPathname(), ios_base::out | ios_base::binary);
+		addNote(subNote);
+	}
+	catch(...){
+		error();
+	}
+}
+
+void Note::deleteRecursively(const std::vector<std::weak_ptr<Note> > &list)
+{
+	try{
+		vector<Note*> notes;
+		for (auto &n : list ){
+			if (!n.expired())
+				notes.push_back(n.lock().get());
+		}
+		std::sort(notes.begin(), notes.end(),[](const auto a, const auto b){
+			return a->hierarchyDepth() > b->hierarchyDepth();
+		});
+		for (auto n : notes)
+			n->deleteSelfRecursively();
+	}
+	catch(...){
+		error();
+	}
+}
+
+void Note::deleteSelfRecursively()
+{
+	ASSERT(parent_ != nullptr); //not root
+	try{
+		remove_all(subNotesDir());
+		remove_all(attachDir());
+		remove(textPathname());
+		removeFromParent();
+	}
+	catch(...){
+		throw Exception(tr("Can't delete note '%1':").arg(name_));
+	}
+}
+
+void Note::save(const QString &txt)
+{
+	boost::filesystem::path outFilename;
+	try{
+		outFilename = textPathname();
+		outFilename += newFileExt;
+		using io = std::ios_base;
+		boost::filesystem::fstream out(outFilename, io::out | io::trunc | io::binary);
+		out.exceptions(io::failbit | io::badbit);
+		auto utf8txt = txt.toUtf8();
+		out.write(utf8txt.data(), utf8txt.size());
+		out.close();
+		rename(outFilename, textPathname());
+	}
+	catch(...){
+		error(tr("Can't save note '%1' to file '%2'\n").arg(name_).arg(toQS(outFilename)));
+	}
+}
+
+void Note::load()
+{
+	try{
+		auto inFilename = textPathname();
+		if (!exists(inFilename)){
+			emit noteTextRdy(QString());
+			return;
+		}
+		using io = std::ios_base;
+		boost::filesystem::fstream in(inFilename, io::in | io::binary);
+		in.exceptions(io::failbit | io::badbit);
+		auto inSize = file_size(inFilename);
+		if (inSize == static_cast<uintmax_t>(-1))
+			throw RecoverableException(
+				tr("Can't determine file size. Is it really a file?").arg(toQS(inFilename)));
+		QByteArray ba;
+		ba.resize(inSize);
+		in.read(ba.data(), ba.size());
+		in.close();
+		emit noteTextRdy(QString(ba));
+	}
+	catch(...){
+		error(tr("Can't load file '%1'\n").arg(toQS(textPathname())));
 	}
 }
 
@@ -291,16 +391,20 @@ path Note::pathToNote() const
 
 boost::filesystem::path Note::attachDir() const
 {
+	ASSERT(parent_ != nullptr); // root has no attach
 	return pathToNote() / encodeToFilename(name_+attachExt);
 }
 
 boost::filesystem::path Note::subNotesDir() const
 {
+	if (parent_ == nullptr)
+		return pathToNote();
 	return pathToNote() / encodeToFilename(name_);
 }
 
 boost::filesystem::path Note::textPathname() const
 {
+	ASSERT(parent_ != nullptr); // root has no text
 	return pathToNote() / encodeToFilename(name_+textExt);
 }
 
@@ -325,12 +429,12 @@ bool Note::exist(const QString &name)
 QString Note::makePathName(const QString separator) const
 {
 	std::stack<const Note*> stack;
-	for (const Note *n = parent(); n != nullptr; n = n->parent())
+	for (const Note *n = parent_; n != nullptr; n = n->parent_)
 		stack.push(n);
 	stack.pop();
 	QString ret;
 	while (!stack.empty()){
-		ret += stack.top()->name();
+		ret += stack.top()->name_;
 		stack.pop();
 		if (!stack.empty())
 			ret += separator;
@@ -341,24 +445,30 @@ QString Note::makePathName(const QString separator) const
 int Note::hierarchyDepth() const
 {
 	int depth = 0;
-	for (const Note *n = parent(); n != nullptr; n = n->parent())
+	for (const Note *n = parent_; n != nullptr; n = n->parent_)
 		depth++;
 	return depth;
 }
 
 
-void Note::name(const QString &name)
+void Note::changeName(const QString &name)
 {
-	if (name == name_)
-		return;
-	if (parent_->exist(name)){
-		throw RecoverableException(
-			QCoreApplication::translate(
-			"notes renaming",
-			"'%1' already exist there.\n").arg(name));
+	ASSERT(parent_ != nullptr);
+	try{
+		if (name == name_)
+			return;
+		if (parent_->exist(name)){
+			throw RecoverableException(
+				QCoreApplication::translate(
+				"notes renaming",
+				"'%1' already exist there.\n").arg(name));
+		}
+		move(pathToNote(), encodeToFilename(name));
+		name_ = name;
+		emit nameChanged(name);
 	}
-	move(pathToNote(), encodeToFilename(name));
-	name_ = name;
-	parent_->sortSubnotes();
+	catch(...){
+		error();
+	}
 }
 

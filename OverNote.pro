@@ -2,7 +2,7 @@ TEMPLATE = app
 QMAKE_EXT_CPP += c++
 OBJECTS_DIR = ./tmp
 #TARGET =
-QT += widgets
+QT += widgets webkitwidgets
 CONFIG += precompile_header
 #CONFIG += c++14
 
@@ -15,6 +15,7 @@ CONFIG(debug, debug|release) {
 }
 
 PRECOMPILED_HEADER = src/precomp.h
+INCLUDEPATH += src
 
 SOURCES += \
     src/main.c++ \
@@ -23,8 +24,9 @@ SOURCES += \
     src/MainWindow.c++ \
     src/App.c++ \
     src/Exceptions.c++ \
-    src/NotesTreeActions.c++ \
-    src/AddNewNoteDialog.c++
+    src/AddNewNoteDialog.c++ \
+    src/NoteEditor.c++ \
+    src/NotesTree.c++
 
 RESOURCES += res/qml.qrc
 
@@ -40,10 +42,13 @@ HEADERS +=  src/precomp.h \
     src/App.h \
     src/Exceptions.h \
     src/ByteArraySerializer.h \
-    src/NotesTreeActions.h \
-    src/AddNewNoteDialog.h
+    src/AddNewNoteDialog.h \
+    src/NoteEditor.h \
+    src/NotesTree.h
 
 FORMS    += src/MainWindow.ui \
-    src/AddNewNoteDialog.ui
+    src/AddNewNoteDialog.ui \
+    src/NoteEditor.ui \
+    src/NotesTree.ui
 
 

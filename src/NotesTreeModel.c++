@@ -68,6 +68,7 @@ bool NotesTreeModel::dropMimeData(const QMimeData *data, Qt::DropAction action, 
 {
 	Q_UNUSED(row)
 	Q_UNUSED(column)
+	Q_UNUSED(action)
 	ASSERT(action == Qt::MoveAction);
 	NoteInTree *parentNote = noteAt(parent);
 	auto ba = data->data(mimeType_);

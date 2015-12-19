@@ -81,12 +81,28 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 		auto note = make_shared<Note>();
 		note->createFromNoteTextFile(fi.path());
 		dirs.erase(encodeToFilename(note->name_).c_str());
+		dirs.erase(toQS(encodeToFilename(note->name_ + attachExt)));
+		dirs.erase(toQS(encodeToFilename(note->name_ + embedExt)));
 		addNote(note);
 	}
-	for (auto &dir : dirs){
-		const boost::filesystem::path &dirPath = dir.second.path();
-		if (QString(dirPath.filename().c_str()).endsWith(attachExt))
+	for (auto dir = dirs.begin(); dir != dirs.end(); ){
+		const boost::filesystem::path &dirPath = dir->second.path();
+		if (
+			toQS(dirPath.filename()).endsWith(attachExt) ||
+			toQS(dirPath.filename()).endsWith(embedExt)
+		){
+			++dir;
 			continue;
+		}
+		auto subNote = make_shared<Note>();
+		subNote->addFromSubnotesDir(dirPath);
+		dirs.erase(toQS(encodeToFilename(subNote->name_ + attachExt)));
+		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
+		dir = dirs.erase(dir);
+		addNote(subNote);
+	}
+	for (auto &dir : dirs){ // just in case we happened to have a note name ending on attachExt etc
+		const boost::filesystem::path &dirPath = dir.second.path();
 		auto subNote = make_shared<Note>();
 		subNote->addFromSubnotesDir(dirPath);
 		addNote(subNote);
@@ -162,12 +178,15 @@ void Note::cleanUpFileSystem()
 	auto subDir = subNotesDir();
 	auto textFile = textPathname();
 	auto attach = attachDir();
+	auto embed = embedDir();
 	if (exists(subDir) && boost::filesystem::is_empty(subDir) && exists(textFile))
 		remove(subDir);
 	if (exists(textFile) && boost::filesystem::is_empty(textFile) && exists(subDir))
 		remove(textFile);
 	if (exists(attach) && boost::filesystem::is_empty(attach))
 		remove(attach);
+	if (exists(embed) && boost::filesystem::is_empty(embed))
+		remove(embed);
 }
 
 void Note::ensureSubDirExist()
@@ -393,6 +412,12 @@ boost::filesystem::path Note::attachDir() const
 {
 	ASSERT(parent_ != nullptr); // root has no attach
 	return pathToNote() / encodeToFilename(name_+attachExt);
+}
+
+path Note::embedDir() const
+{
+	ASSERT(parent_ != nullptr); // root has no embed
+	return pathToNote() / encodeToFilename(name_+embedExt);
 }
 
 boost::filesystem::path Note::subNotesDir() const

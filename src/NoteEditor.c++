@@ -42,7 +42,6 @@ void NoteEditor::showTextFor(std::weak_ptr<Note> n)
 
 	connectionsToNote_.push_back(connect(this, &NoteEditor::saveNoteTxt, note.get(), &Note::save));
 
-	//ui.noteEdit->setHtml(tr("Loading...<img src=\"qrc:/68.png\">"));
 	ui.noteEdit->load(QUrl("qrc:/loading-note.html"));
 	emit getNoteTxt(n);
 }

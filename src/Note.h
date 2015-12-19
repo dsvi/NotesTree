@@ -71,6 +71,7 @@ private:
 	bool  hasSubnotes() const;
 	bool  hasText() const;
 	boost::filesystem::path attachDir() const;
+	boost::filesystem::path embedDir() const;
 	boost::filesystem::path subNotesDir() const;
 	boost::filesystem::path textPathname() const;
 
@@ -94,7 +95,9 @@ private:
 	static constexpr
 	const char delimChar = 1;
 	constexpr	static
-	const char *attachExt = delimChar + u8"attach";
+	const char *attachExt = u8".attach";
+	constexpr	static
+	const char *embedExt = u8".embed";  // files embedded in note html (images etc)
 	constexpr	static
 	const char *newFileExt = u8".new";
 };

@@ -18,7 +18,7 @@ void App::addToolButton(QWidget *parent, QBoxLayout *l, QAction *a)
 {
 	auto b = new QToolButton(parent);
 	b->setAutoRaise(true);
-	b->setIconSize(QSize(6*hmm_, 6*vmm_));
+	b->setIconSize(QSize(5*hmm_, 5*vmm_));
 	b->setDefaultAction(a);
 	l->addWidget(b);
 }

@@ -10,9 +10,9 @@ void MessageOutput(QtMsgType type, const QMessageLogContext &context, const QStr
 		case QtDebugMsg:
 				fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
 				break;
-		case QtInfoMsg:
-				fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-				break;
+//		case QtInfoMsg:
+//				fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+//				break;
 		case QtWarningMsg:
 				fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
 				break;

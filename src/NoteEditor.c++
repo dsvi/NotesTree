@@ -7,7 +7,14 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	connect(&autosaveTimer_, &QTimer::timeout, this, &NoteEditor::save);
 	connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, &NoteEditor::save);
 	auto settings = ui.noteEdit->settings();
-	settings->setFontFamily(QWebSettings::FontFamily::StandardFont, QGuiApplication::font().family());
+	auto systemFont = QGuiApplication::font();
+	settings->setFontFamily(QWebSettings::FontFamily::StandardFont, systemFont.family());
+	auto screen = QGuiApplication::primaryScreen();
+	// pt suppose to be 1/72 of inch, but QT seem to assume 1/96
+	//int fontSize = screen->physicalDotsPerInchX() * systemFont.pointSize() / 72;
+	int fontSize = screen->physicalDotsPerInchX() * systemFont.pointSize() / 96;
+	settings->setFontSize(QWebSettings::FontSize::DefaultFontSize, fontSize);
+	settings->setFontSize(QWebSettings::FontSize::DefaultFixedFontSize, fontSize);
 	auto page = ui.noteEdit->page();
 	page->setContentEditable(true);
 	page->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);

@@ -18,7 +18,6 @@ public:
 private:
 	Ui::MainWindow *ui;
 	Note            rootNote_;
-	QThread         ioThread_;
 };
 
 

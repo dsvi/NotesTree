@@ -8,11 +8,15 @@
 #include <QMainWindow>
 #include <QMenu>
 #include <QMessageBox>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QStringBuilder>
 #include <QtCore>
 #include <QtDebug>
 #include <QtGui>
 #include <QToolButton>
+#include <QWebElementCollection>
 #include <QWebFrame>
 #include <QWebView>
 
@@ -76,6 +80,11 @@ typedef uint64_t                 ui64;
 inline
 QString toQS(const boost::filesystem::path &p){
 	return QString::fromStdWString(p.wstring());
+}
+
+inline
+boost::filesystem::path toPath(const QString &p){
+	return boost::filesystem::path(p.toUtf8());
 }
 
 #endif // PRECOMP_H

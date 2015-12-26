@@ -11,14 +11,16 @@ class NoteEditor : public QWidget
 public:
 	explicit NoteEditor(QWidget *parent = 0);
 signals:
-	void getNoteTxt(std::weak_ptr<Note> n);
-	void saveNoteTxt(const QString  n);
+	void startEditingTxt();
+	void saveTxt(const QString n);
+	void stopEditingTxt();
 public slots:
-	void showTextFor(std::weak_ptr<Note> n);
-	void noteText(const QString &txt);
+	void editTextFor(std::weak_ptr<Note> n);
+	void noteText(const QString &txt, const QString &basePath);
 	void stopNoteTracking();
 	void save();
 
+	void changed();
 private:
 	Ui::NoteEditor ui;
 	std::vector<QMetaObject::Connection> connectionsToNote_;

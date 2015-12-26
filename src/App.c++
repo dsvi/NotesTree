@@ -8,6 +8,16 @@ App::App(QObject *parent) : QObject(parent)
 {
 	connect(this, &App::error, this, &App::errorSlot);
 	connect(this, &App::reportError, this, &App::showErrorDilogSlot);
+	connect(this, &App::reportErrorMsg, this, &App::errorMsgSlot);
+
+	ioThread_.setObjectName("io thread");
+	connect(qApp, &QCoreApplication::aboutToQuit, [&](){
+		ioThread_.quit();
+		ioThread_.wait();
+	});
+	ioThread_.start();
+
+	downloader_.moveToThread(&ioThread_);
 
 	auto screen = QGuiApplication::primaryScreen();
 	hmm_ = screen->physicalDotsPerInchX() / 25.4;
@@ -50,10 +60,7 @@ void App::showErrorDilogSlot(std::exception_ptr eptr)
 	} catch(const std::exception& e) {
 		BuildErrorMsg(e, msg);
 	}
-	QMessageBox msgBox;
-	msgBox.setText(tr("Error:","dialog about happened error"));
-	msgBox.setInformativeText(msg);
-	msgBox.exec();
+	errorMsgSlot(msg);
 }
 
 void App::errorSlot(std::exception_ptr e)
@@ -61,6 +68,14 @@ void App::errorSlot(std::exception_ptr e)
 	showErrorDilogSlot(e);
 	if (!isRecoverable(e))
 		QCoreApplication::exit(1);
+}
+
+void App::errorMsgSlot(const QString &e)
+{
+	QMessageBox msgBox;
+	msgBox.setText(tr("Error:","dialog about happened error"));
+	msgBox.setInformativeText(e);
+	msgBox.exec();
 }
 
 

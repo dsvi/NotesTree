@@ -15,8 +15,7 @@ signals:
 	void noteAdded(std::weak_ptr<Note> n);
 	void noteRemoved();
 	void nameChanged(const QString &name);
-	void noteTextRdy(const QString &txt);
-
+	void noteTextRdy(const QString &txt, const QString &basePath);
 public slots:
 
 	/// create hierarchy of notes and subnotes from the root folder
@@ -31,8 +30,13 @@ public slots:
 	void createSubnote(const QString &name);
 	void deleteRecursively(const std::vector<std::weak_ptr<Note> > &list);
 
-	void save(const QString &txt);
-	void load();
+	/// only one editor should exist at a time.
+	/// the slot eventualy responds with the noteTextRdy() signal
+	/// calls stopEditing() so all previous editors become invalid
+	void startEditing();
+	void save(QString html);
+	void stopEditing();
+
 private:
 	Note     *parent_ = nullptr; 	/// nullptr means this is root
 	QString		name_; // root has path to root here, instead of name
@@ -40,18 +44,18 @@ private:
 		return name_.isNull();
 	}
 	std::vector<std::shared_ptr<Note>> subNotes_;
-
-	boost::filesystem::path pathToNote() const;
+	std::map<QString, QString>         urlsPatch_;
+	std::set<QString>                  urlsInDownload_;
 
 	/// populate list of subnotes and the name from the @path dir
 	void addFromSubnotesDir(const boost::filesystem::path &path);
 	/// pathname should end on textExt
 	void createFromNoteTextFile(const boost::filesystem::path &textPathname);
+
 	void move(const boost::filesystem::path &newPath, const boost::filesystem::path &newFileName);
 	void adopt_(const std::shared_ptr<Note> &n);
 	void cleanUpFileSystem();
 	void ensureSubDirExist();
-	size_t numChildren() const;
 	Note *child(size_t ndx);
 	const Note *child(size_t ndx) const;
 	size_t findIndexOf(const Note *) const;
@@ -65,16 +69,15 @@ private:
 	int hierarchyDepth() const;
 
 	/// add the file as attached to the note
-	void attach(const QFileInfo &fi);
-	/// attache the file.
-	bool  hasAttach() const;
-	bool  hasSubnotes() const;
-	bool  hasText() const;
+	//void attach(const QFileInfo &fi);
+
+	boost::filesystem::path pathToNote() const;
 	boost::filesystem::path attachDir() const;
 	boost::filesystem::path embedDir() const;
 	boost::filesystem::path subNotesDir() const;
 	boost::filesystem::path textPathname() const;
 
+	void warning(QString &&msg);
 	void error(QString &&msg);
 	void error();
 	/// root of the current hierarchy
@@ -85,6 +88,15 @@ private:
 	std::shared_ptr<Note> removeFromParent();
 
 	void deleteSelfRecursively();
+
+	/// also creates embed dir, if it did not exist
+	boost::filesystem::path generateEmbedFilename(const boost::filesystem::path &hint);
+	void downloaded(const QString &originalUrl, const QByteArray &content, const QString &error);
+
+	QString loadTxt();
+	void saveTxt(const QString &txt);
+
+	QString applyPatch(const QString &html);
 
 	static
 	QString decodeFromFilename(const boost::filesystem::path& fn);
@@ -111,11 +123,6 @@ QString Note::name() const
 	return name_;
 }
 
-inline
-size_t Note::numChildren() const
-{
-	return subNotes_.size();
-}
 inline
 Note *Note::child(size_t ndx)
 {

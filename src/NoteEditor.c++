@@ -1,5 +1,7 @@
 #include "NoteEditor.h"
 
+using namespace std;
+
 NoteEditor::NoteEditor(QWidget *parent) :
   QWidget(parent)
 {
@@ -22,7 +24,6 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		QDesktopServices::openUrl(url);
 	});
 
-
 	auto boldAction = page->action(QWebPage::ToggleBold);
 	boldAction->setIcon(QIcon::fromTheme("format-text-bold"));
 	app->addToolButton(this, ui.toolBoxLayout, boldAction);
@@ -36,40 +37,51 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	stopNoteTracking();
 }
 
-void NoteEditor::showTextFor(std::weak_ptr<Note> n)
+void NoteEditor::editTextFor(std::weak_ptr<Note> wn)
 {
 	stopNoteTracking();
-
-	auto note = n.lock();
+	auto note = wn.lock();
 	if (!note)
 		return;
+	Note *n = note.get();
 
-	connectionsToNote_.push_back(connect(this, &NoteEditor::getNoteTxt, note.get(), &Note::load));
-	connectionsToNote_.push_back(connect(note.get(), &Note::noteTextRdy, this, &NoteEditor::noteText));
+	connectionsToNote_.push_back(connect(this, &NoteEditor::startEditingTxt, n, &Note::startEditing));
+	connectionsToNote_.push_back(connect(this, &NoteEditor::stopEditingTxt,  n, &Note::stopEditing));
+	connectionsToNote_.push_back(connect(n, &Note::noteTextRdy, this, &NoteEditor::noteText));
 
-	connectionsToNote_.push_back(connect(this, &NoteEditor::saveNoteTxt, note.get(), &Note::save));
+	connectionsToNote_.push_back(connect(this, &NoteEditor::saveTxt, n, &Note::save));
 
 	ui.noteEdit->load(QUrl("qrc:/loading-note.html"));
-	emit getNoteTxt(n);
+	emit startEditingTxt();
 }
 
-void NoteEditor::noteText(const QString &txt)
+void NoteEditor::noteText(const QString &txt, const QString &basePath)
 {
 	this->setEnabled(true);
-	ui.noteEdit->setHtml(txt);
-	connectionsToNote_.push_back(connect(ui.noteEdit->page(), &QWebPage::contentsChanged, [this](){
-		haveToSave_ = true;
-		autosaveTimer_.start(5000);
-	}));
+	QString html = txt;
+	if (txt.isEmpty()){
+		QFile file(":/default-note.html");
+		file.open(QFile::ReadOnly);
+		html = QString(file.readAll());
+	}
+	ui.noteEdit->setHtml(html, QUrl::fromLocalFile(basePath + "/"));
+	connectionsToNote_.push_back(connect(ui.noteEdit->page(), &QWebPage::contentsChanged, this, &NoteEditor::changed));
 }
 
 void NoteEditor::stopNoteTracking()
 {
 	save();
+	emit stopEditingTxt();
 	for (auto &c : connectionsToNote_)
 		disconnect(c);
 	ui.noteEdit->setHtml(QString());
 	this->setEnabled(false);
+}
+
+void NoteEditor::changed()
+{
+	haveToSave_ = true;
+	autosaveTimer_.start(5000);
 }
 
 void NoteEditor::save()
@@ -78,7 +90,11 @@ void NoteEditor::save()
 		return;
 	haveToSave_ = false;
 	autosaveTimer_.stop();
-	emit saveNoteTxt(ui.noteEdit->page()->mainFrame()->toHtml());
+	auto frame = ui.noteEdit->page()->mainFrame();
+	QString txt = frame->toPlainText().trimmed();
+	if (txt.isEmpty())
+		emit saveTxt(QString());
+	else
+		emit saveTxt(frame->toHtml());
 	//qDebug()<< "is still modified? " << ui.noteEdit->isModified(); // yes, still is
 }
-

@@ -13,16 +13,10 @@ MainWindow::MainWindow(QWidget *parent) :
 	qRegisterMetaType<std::vector<std::weak_ptr<Note>>>();
 	qRegisterMetaType<std::shared_ptr<NoteInTree>>();
 
-	ioThread_.setObjectName("io thread");
-	rootNote_.moveToThread(&ioThread_);
-	ioThread_.start();
-	connect(qApp, &QCoreApplication::aboutToQuit, [&](){
-		ioThread_.quit();
-		ioThread_.wait();
-	});
+	rootNote_.moveToThread(app->ioThread());
 	//connect(this, &NotesTreeModel::loadFrom, rootNote_, &Note::createHierarchyFromRoot);
 	ui->notesTree->root(&rootNote_);
-	connect(ui->notesTree, &NotesTree::noteActivated, ui->noteEditor, &NoteEditor::showTextFor);
+	connect(ui->notesTree, &NotesTree::noteActivated, ui->noteEditor, &NoteEditor::editTextFor);
 
 	QMetaObject::invokeMethod(&rootNote_, "createHierarchyFromRoot", Qt::QueuedConnection, Q_ARG(QString, "/home/ds/OTest"));
 }

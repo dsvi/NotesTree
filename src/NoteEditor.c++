@@ -7,7 +7,6 @@ NoteEditor::NoteEditor(QWidget *parent) :
 {
 	ui.setupUi(this);
 	connect(&autosaveTimer_, &QTimer::timeout, this, &NoteEditor::save);
-	connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, &NoteEditor::save);
 	auto settings = ui.noteEdit->settings();
 	auto systemFont = QGuiApplication::font();
 	settings->setFontFamily(QWebSettings::FontFamily::StandardFont, systemFont.family());
@@ -24,13 +23,37 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		QDesktopServices::openUrl(url);
 	});
 
-	auto boldAction = page->action(QWebPage::ToggleBold);
-	boldAction->setIcon(QIcon::fromTheme("format-text-bold"));
-	app->addToolButton(this, ui.toolBoxLayout, boldAction);
-
-	auto italicAction = page->action(QWebPage::ToggleItalic);
-	italicAction->setIcon(QIcon::fromTheme("format-text-italic"));
-	app->addToolButton(this, ui.toolBoxLayout, italicAction);
+	{
+		auto act = page->action(QWebPage::ToggleBold);
+		act->setIcon(QIcon(":/ico/bold"));
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
+	{
+		auto act = page->action(QWebPage::ToggleItalic);
+		act->setIcon(QIcon(":/ico/italic"));
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
+	{
+		auto act = page->action(QWebPage::ToggleUnderline);
+		act->setIcon(QIcon(":/ico/underline"));
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
+	{
+		auto act = page->action(QWebPage::ToggleStrikethrough);
+		act->setIcon(QIcon(":/ico/strikethrough"));
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
+	app->addToolBoxSpacer(ui.toolBoxLayout);
+	{
+		auto act = page->action(QWebPage::ToggleSuperscript);
+		act->setIcon(QIcon(":/ico/superscript"));
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
+	{
+		auto act = page->action(QWebPage::ToggleSubscript);
+		act->setIcon(QIcon(":/ico/subscript"));
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
 
 	ui.toolBoxLayout->addStretch();
 
@@ -81,7 +104,8 @@ void NoteEditor::stopNoteTracking()
 void NoteEditor::changed()
 {
 	haveToSave_ = true;
-	autosaveTimer_.start(5000);
+	if (!autosaveTimer_.isActive())
+		autosaveTimer_.start(5000);
 }
 
 void NoteEditor::save()
@@ -98,3 +122,5 @@ void NoteEditor::save()
 		emit saveTxt(frame->toHtml());
 	//qDebug()<< "is still modified? " << ui.noteEdit->isModified(); // yes, still is
 }
+
+

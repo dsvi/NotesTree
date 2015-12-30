@@ -78,16 +78,15 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 		QString name = fi.path().filename().c_str();
 		if (!name.endsWith(Note::textExt))
 			continue;
-		auto note = make_shared<Note>();
-		note->createFromNoteTextFile(fi.path());
-		addNote(note);
-		class path subDir = note->subNotesDir();
+		auto subNote = make_shared<Note>();
+		subNote->createFromNoteTextFile(fi.path());
+		addNote(subNote);
+		class path subDir = subNote->subNotesDir();
 		if (exists(subDir))
-			note->addFromSubnotesDir(subDir);
-		dirs.erase(toQS(encodeToFilename(note->name_)));
-		dirs.erase(toQS(encodeToFilename(note->name_ + attachExt)));
-		dirs.erase(toQS(encodeToFilename(note->name_ + embedExt)));
-
+			subNote->addFromSubnotesDir(subDir);
+		dirs.erase(toQS(encodeToFilename(subNote->name_)));
+		dirs.erase(toQS(encodeToFilename(subNote->name_ + attachExt)));
+		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
 	}
 	for (auto dir = dirs.begin(); dir != dirs.end(); ){
 		const boost::filesystem::path &dirPath = dir->second.path();
@@ -99,17 +98,19 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 			continue;
 		}
 		auto subNote = make_shared<Note>();
+		subNote->name_ = decodeFromFilename(dirPath.filename());
+		addNote(subNote);
 		subNote->addFromSubnotesDir(dirPath);
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + attachExt)));
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
 		dir = dirs.erase(dir);
-		addNote(subNote);
 	}
 	for (auto &dir : dirs){ // just in case we happened to have a note name ending on attachExt etc
 		const boost::filesystem::path &dirPath = dir.second.path();
 		auto subNote = make_shared<Note>();
-		subNote->addFromSubnotesDir(dirPath);
+		subNote->name_ = decodeFromFilename(dirPath.filename());
 		addNote(subNote);
+		subNote->addFromSubnotesDir(dirPath);
 	}
 }
 
@@ -121,23 +122,21 @@ void Note::createFromNoteTextFile(const path &fi)
 	name_ = decodeFromFilename(name);
 }
 
-void Note::createHierarchyFromRoot(const QString &p)
+void Note::createHierarchyFromRoot(const path &p)
 {
 	try{
 		ASSERT(parent_ == nullptr);
 		emit clear();
 		subNotes_.clear();
-		name_.clear();
-		boost::filesystem::path path(p.toUtf8());
-		if (!exists(path))
-			throw RecoverableException(QCoreApplication::translate("Filesystem", "directory '%1' doesnt exist").arg(p));
-		name_ = p;
-		addFromSubnotesDir(path);
+		name_ = toQS(p);
+		if (!exists(p))
+			throw RecoverableException(QCoreApplication::translate("Filesystem", "directory '%1' doesnt exist").arg(name_));
+		addFromSubnotesDir(p);
 	}
 	catch(...){
 		subNotes_.clear();
 		name_.clear();
-		app->reportError(std::current_exception());
+		warning("Can't load notes.");
 	}
 }
 
@@ -303,9 +302,10 @@ void Note::createSubnote(const QString &name)
 		boost::filesystem::fstream out(
 			subNote->textPathname(), ios_base::out | ios_base::binary);
 		addNote(subNote);
+		cleanUpFileSystem();
 	}
 	catch(...){
-		error();
+		warning(tr("Cant create note '%1'").arg(name));
 	}
 }
 
@@ -336,6 +336,7 @@ void Note::deleteSelfRecursively()
 		remove_all(attachDir());
 		remove(textPathname());
 		removeFromParent();
+		parent_->cleanUpFileSystem();
 	}
 	catch(...){
 		throw Exception(tr("Can't delete note '%1':").arg(name_));
@@ -567,12 +568,8 @@ void Note::stopEditing()
 
 path Note::pathToNote() const
 {
-	if (parent_){
-		if (parent_->parent_)
-			return parent_->pathToNote() / encodeToFilename(parent_->name_);
-		else
-			return parent_->pathToNote(); // since name_ field in root has different meaning
-	}
+	if (parent_)
+		return parent_->subNotesDir();
 	else
 		return path(name_.toUtf8());
 }
@@ -643,7 +640,6 @@ int Note::hierarchyDepth() const
 		depth++;
 	return depth;
 }
-
 
 void Note::changeName(const QString &name)
 {

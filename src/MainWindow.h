@@ -14,7 +14,8 @@ class MainWindow : public QMainWindow
 public:
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
-
+protected:
+	void closeEvent(QCloseEvent *) override;
 private:
 	Ui::MainWindow *ui;
 	Note            rootNote_;

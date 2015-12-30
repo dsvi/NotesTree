@@ -6,8 +6,11 @@ QT += widgets webkitwidgets network
 CONFIG += precompile_header
 #CONFIG += c++14
 
-QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++14
-QMAKE_LFLAGS   += -stdlib=libc++ -std=c++14
+QMAKE_CXXFLAGS += -std=c++14
+QMAKE_LFLAGS   += -std=c++14
+
+#QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++14
+#QMAKE_LFLAGS   += -stdlib=libc++ -std=c++14
 LIBS += -lboost_filesystem -lboost_system
 
 CONFIG(debug, debug|release) {
@@ -27,7 +30,8 @@ SOURCES += \
     src/AddNewNoteDialog.c++ \
     src/NoteEditor.c++ \
     src/NotesTree.c++ \
-    src/Downloader.c++
+    src/Downloader.c++ \
+    src/Config.c++
 
 RESOURCES += res/qml.qrc
 
@@ -46,7 +50,8 @@ HEADERS +=  src/precomp.h \
     src/AddNewNoteDialog.h \
     src/NoteEditor.h \
     src/NotesTree.h \
-    src/Downloader.h
+    src/Downloader.h \
+    src/Config.h
 
 FORMS    += src/MainWindow.ui \
     src/AddNewNoteDialog.ui \

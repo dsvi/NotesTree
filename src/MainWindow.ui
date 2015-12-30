@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>OverNote</string>
+   <string>TreeNote</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
@@ -26,8 +26,7 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="NotesTree" name="notesTree" native="true">
-      </widget>
+      <widget class="NotesTree" name="notesTree" native="true"/>
       <widget class="NoteEditor" name="noteEditor" native="true"/>
      </widget>
     </item>

@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
 	qInstallMessageHandler(MessageOutput);
 #endif
 	QApplication a(argc, argv);
+	a.setApplicationName("TreeNote");
 	app = new App(&a);
 	try{
 		MainWindow w;

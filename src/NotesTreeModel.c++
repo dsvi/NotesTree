@@ -85,11 +85,8 @@ bool NotesTreeModel::dropMimeData(const QMimeData *data, Qt::DropAction action, 
 	return true;
 }
 
-Qt::ItemFlags NotesTreeModel::flags(const QModelIndex &index) const
+Qt::ItemFlags NotesTreeModel::flags(const QModelIndex &) const
 {
-	if (!index.isValid())
-			return 0;
-
 	return
 	Qt::ItemIsSelectable  |
 	Qt::ItemIsEditable    |
@@ -170,10 +167,14 @@ NoteInTree::NoteInTree(std::weak_ptr<Note> n, QThread *viewThread) : QObject(nul
 	connect(this, &NoteInTree::adopt, note, &Note::adopt);
 	connect(this, &NoteInTree::createSubnote, note, &Note::createSubnote);
 
-	connect(note, &Note::noteAdded, [=](weak_ptr<Note> mn){
+	auto c = connect(note, &Note::noteAdded, [=](weak_ptr<Note> mn){
 		auto vn = make_shared<NoteInTree>(mn, viewThread);
 		QMetaObject::invokeMethod(this, "addSubnote", Qt::QueuedConnection, Q_ARG(std::shared_ptr<NoteInTree>, vn));
 	});
+	connect(this, &NoteInTree::destroyed, [=](){
+		this->disconnect(c);
+	});
+
 	connect(note, &Note::noteRemoved, this, &NoteInTree::removeThis);
 }
 
@@ -213,7 +214,7 @@ void NoteInTree::nameChanged(const QString &name)
 void NoteInTree::sortKids()
 {
 	std::sort(children.begin(), children.end(), [](const auto &a, const auto &b){
-		return a->name < b->name;
+		return a->name.compare(b->name, Qt::CaseInsensitive) < 0;
 	});
 }
 

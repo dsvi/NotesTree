@@ -18,11 +18,18 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->notesTree->root(&rootNote_);
 	connect(ui->notesTree, &NotesTree::noteActivated, ui->noteEditor, &NoteEditor::editTextFor);
 
-	QMetaObject::invokeMethod(&rootNote_, "createHierarchyFromRoot", Qt::QueuedConnection, Q_ARG(QString, "/home/ds/OTest"));
+	connect(app->cfg(), &Config::rootChanged, &rootNote_, &Note::createHierarchyFromRoot);
+	app->cfg()->emitRootChanged();
 }
 
 MainWindow::~MainWindow()
 {
 	delete ui;
+}
+
+void MainWindow::closeEvent(QCloseEvent *ev)
+{
+	ui->noteEditor->save();
+	ev->accept();
 }
 

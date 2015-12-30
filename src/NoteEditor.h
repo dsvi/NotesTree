@@ -26,6 +26,7 @@ private:
 	std::vector<QMetaObject::Connection> connectionsToNote_;
 	QTimer autosaveTimer_;
 	bool   haveToSave_ = false;
+
 };
 
 #endif // NOTEEDITOR_H

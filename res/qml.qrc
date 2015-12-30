@@ -5,13 +5,14 @@
         <file>default-note.html</file>
     </qresource>
     <qresource prefix="/ico">
-        <file>ico/bold.svg</file>
-        <file>ico/italic.svg</file>
+        <file alias="bold">ico/bold.svg</file>
+        <file alias="italic">ico/italic.svg</file>
         <file alias="remove">ico/minus.svg</file>
         <file>ico/pencil.svg</file>
         <file alias="add">ico/plus.svg</file>
-        <file>ico/spinner6.svg</file>
-        <file>ico/subscript.svg</file>
-        <file>ico/superscript.svg</file>
+        <file alias="subscript">ico/subscript.svg</file>
+        <file alias="superscript">ico/superscript.svg</file>
+        <file alias="strikethrough">ico/strikethrough.svg</file>
+        <file alias="underline">ico/underline.svg</file>
     </qresource>
 </RCC>

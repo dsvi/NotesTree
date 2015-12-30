@@ -1,6 +1,7 @@
 #ifndef APP_H
 #define APP_H
 
+#include "Config.h"
 #include "Downloader.h"
 
 /// this isn't meant to be deleted
@@ -14,6 +15,7 @@ public:
 	/// set only once
 	void mainWindow(QMainWindow *mainWnd);
 
+	Config *cfg();
 	QThread *ioThread();
 	Downloader *downloader();
 
@@ -36,6 +38,7 @@ private:
 	QMainWindow *mainWnd_;
 	qreal  hmm_ = 0; /// pixel per mm horizontal
 	qreal  vmm_ = 0;
+	Config       config_;
 };
 
 inline
@@ -43,23 +46,25 @@ void App::mainWindow(QMainWindow *mainWnd)
 {
 	mainWnd_ = mainWnd;
 }
-
 inline
 QThread *App::ioThread()
 {
 	return &ioThread_;
 }
-
 inline
 Downloader *App::downloader()
 {
 	return &downloader_;
 }
-
 inline
 QMainWindow *App::mainWindow()
 {
 	return mainWnd_;
+}
+inline
+Config *App::cfg()
+{
+	return &config_;
 }
 
 extern

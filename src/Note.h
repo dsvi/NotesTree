@@ -20,7 +20,7 @@ public slots:
 
 	/// create hierarchy of notes and subnotes from the root folder
 	/// this note becames root of the hierarchy
-	void createHierarchyFromRoot(const QString &path);
+	void createHierarchyFromRoot(const boost::filesystem::path &path);
 	void changeName(const QString &name);
 
 	/// adds the notes as child to this, removes it from prev parent.
@@ -84,6 +84,7 @@ private:
 	Note* root();
 
 	void emitAddNoteRecursively(std::shared_ptr<Note> &note);
+	/// name_ is supposed to be set on the note already
 	void addNote(std::shared_ptr<Note> note);
 	std::shared_ptr<Note> removeFromParent();
 

@@ -13,7 +13,10 @@ void NotesTree::root(Note *root)
 	auto treeView = ui.notesView;
 	treeView->setModel(&notesTreeModel_);
 	connect(ui.notesView->selectionModel(), &QItemSelectionModel::currentChanged, [this](const QModelIndex & index){
-		emit noteActivated(notesTreeModel_.noteAt(index)->note);
+		if (index.isValid())
+			emit noteActivated(notesTreeModel_.noteAt(index)->note);
+		else
+			emit noteActivated(std::weak_ptr<Note>());
 	});
 
 	QAction *addNew = new QAction(QIcon(":/ico/add"), QString(), this);

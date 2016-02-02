@@ -133,6 +133,13 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(newHtml);
 			frame->evaluateJavaScript(js);
 		});
+		act->setEnabled(false);
+		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+			if (ui.noteEdit->selectedText().isEmpty())
+				act->setEnabled(false);
+			else
+				act->setEnabled(true);
+		});
 		app->addToolButton(this, ui.toolBoxLayout, act);
 	}
 	ui.toolBoxLayout->addStretch();

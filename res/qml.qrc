@@ -8,11 +8,12 @@
         <file alias="bold">ico/bold.svg</file>
         <file alias="italic">ico/italic.svg</file>
         <file alias="remove">ico/minus.svg</file>
-        <file>ico/pencil.svg</file>
+        <file alias="remove style">ico/pencil.svg</file>
         <file alias="add">ico/plus.svg</file>
         <file alias="subscript">ico/subscript.svg</file>
         <file alias="superscript">ico/superscript.svg</file>
         <file alias="strikethrough">ico/strikethrough.svg</file>
         <file alias="underline">ico/underline.svg</file>
+        <file alias="header">ico/font-size.svg</file>
     </qresource>
 </RCC>

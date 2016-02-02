@@ -369,7 +369,7 @@ QString changeUrls(QString html, std::function<QString(const QString &)> mapper)
 			if (newUrl == cap)
 				continue;
 			to = reg.pos(1);
-			newHtml += html.midRef(from, to);
+			newHtml += html.midRef(from, to - from);
 			newHtml += newUrl;
 			from = to + cap.size();
 		}

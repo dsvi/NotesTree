@@ -30,6 +30,8 @@ void App::addToolButton(QWidget *parent, QBoxLayout *l, QAction *a)
 	b->setAutoRaise(true);
 	b->setIconSize(QSize(4*hmm_, 4*vmm_));
 	b->setDefaultAction(a);
+	if (a->menu())
+		b->setPopupMode(QToolButton::InstantPopup);
 	l->addWidget(b);
 }
 
@@ -79,3 +81,9 @@ void App::errorMsgSlot(const QString &e)
 }
 
 
+QString GetResourceString(const char *res)
+{
+	QFile file(res);
+	file.open(QFile::ReadOnly);
+	return QString(file.readAll());
+}

@@ -17,9 +17,7 @@
 #include <QtDebug>
 #include <QtGui>
 #include <QToolButton>
-#include <QWebElementCollection>
-#include <QWebFrame>
-#include <QWebView>
+#include <QtWebKitWidgets>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

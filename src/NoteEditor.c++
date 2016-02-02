@@ -244,10 +244,11 @@ void NoteEditor::save()
 	autosaveTimer_.stop();
 	auto frame = ui.noteEdit->page()->mainFrame();
 	QString txt = frame->toPlainText().trimmed();
-	if (txt.isEmpty())
+	QString html = frame->toHtml();
+	if (txt.isEmpty() && !html.contains("src", Qt::CaseInsensitive))
 		emit saveTxt(QString());
 	else
-		emit saveTxt(frame->toHtml());
+		emit saveTxt(html);
 	//qDebug()<< "is still modified? " << ui.noteEdit->isModified(); // yes, still is
 }
 

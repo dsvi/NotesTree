@@ -143,7 +143,39 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		app->addToolButton(this, ui.toolBoxLayout, act);
 	}
 	ui.toolBoxLayout->addStretch();
-
+	{
+		QAction *search = new QAction(this);
+		search->setIcon(QIcon(":/ico/search"));
+		search->setToolTip(tr("Find text in the note"));
+		search->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
+		search->setCheckable(true);
+		auto target = ui.searchPanel->height();
+		ui.searchPanel->hide();
+		connect(search, &QAction::triggered, [=](bool checked){
+			QPropertyAnimation *animation = new QPropertyAnimation(ui.searchPanel, "maximumHeight");
+			animation->setDuration(250);
+			if (checked){
+				ui.searchPanel->setMaximumHeight(0);
+				ui.searchPanel->show();
+				ui.searchFor->setFocus();
+				highlightFoundText();
+				animation->setStartValue(0);
+				animation->setEndValue(target);
+			}
+			else{
+				unHighlightFoundText();
+				animation->setEndValue(0);
+				connect(animation, &QAbstractAnimation::finished, [=]{
+					ui.searchPanel->hide();
+				});
+			}
+			animation->start();
+		});
+		connect(ui.searchFor, &QLineEdit::textChanged, [=](){
+			highlightFoundText();
+		});
+		app->addToolButton(this, ui.toolBoxLayout, search);
+	}
 	stopNoteTracking();
 }
 
@@ -176,8 +208,8 @@ void NoteEditor::currentSelectionChanged()
 		hn--;
 		for (size_t i = 0; i < headers_.size(); i++){
 			if ( hn == i ){
-				headers_[i]->setChecked(true);
 				header_->setChecked(true);
+				headers_[i]->setChecked(true);
 			}
 		}
 	}
@@ -188,6 +220,27 @@ void NoteEditor::uncheckHeaders()
 	header_->setChecked(false);
 	for (auto a : headers_)
 		a->setChecked(false);
+}
+
+void NoteEditor::highlightFoundText()
+{
+	QString txt = ui.searchFor->text();
+	if (txt.isEmpty()){
+		unHighlightFoundText();
+		return;
+	}
+	ui.noteEdit->findText("", QWebPage::HighlightAllOccurrences);
+	bool found = ui.noteEdit->findText(txt, QWebPage::HighlightAllOccurrences);
+	if (!found)
+		ui.noteEdit->setGraphicsEffect(new QGraphicsBlurEffect());
+	else
+		ui.noteEdit->setGraphicsEffect(nullptr);
+}
+
+void NoteEditor::unHighlightFoundText()
+{
+	ui.noteEdit->findText("", QWebPage::HighlightAllOccurrences);
+	ui.noteEdit->setGraphicsEffect(nullptr);
 }
 
 void NoteEditor::editTextFor(std::weak_ptr<Note> wn)
@@ -215,6 +268,8 @@ void NoteEditor::noteText(const QString &txt, const QString &basePath)
 	if (txt.isEmpty())
 		html = GetResourceString(":/default-note.html");
 	ui.noteEdit->setHtml(html, QUrl::fromLocalFile(basePath + "/"));
+	if (!ui.searchPanel->isHidden())
+		highlightFoundText();
 	connectionsToNote_.push_back(connect(ui.noteEdit->page(), &QWebPage::contentsChanged, this, &NoteEditor::changed));
 }
 

@@ -9,6 +9,7 @@ public:
 	Note();
 	~Note();
 	QString name() const;
+	bool hasAttach();
 signals:
 	// signaled by root only
 	void clear();
@@ -16,10 +17,12 @@ signals:
 	void noteRemoved();
 	void nameChanged(const QString &name);
 	void noteTextRdy(const QString &txt, const QString &basePath);
+	void attachReady(const QString &attachDirPath);
 public slots:
 
 	/// create hierarchy of notes and subnotes from the root folder
 	/// this note becames root of the hierarchy
+	/// also does filesystem cleanups. (removes empty attach folders etc)
 	void createHierarchyFromRoot(const boost::filesystem::path &path);
 	void changeName(const QString &name);
 
@@ -37,6 +40,8 @@ public slots:
 	void save(QString html);
 	void stopEditing();
 
+	/// creates attach, if did not exist. emits attachReady, if done
+	void attach();
 private:
 	Note     *parent_ = nullptr; 	/// nullptr means this is root
 	QString		name_; // root has path to root here, instead of name

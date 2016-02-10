@@ -36,6 +36,8 @@ private:
 	std::vector<QAction*> headers_;
 	void uncheckHeaders();
 
+	void highlightFoundText();
+	void unHighlightFoundText();
 };
 
 #endif // NOTEEDITOR_H

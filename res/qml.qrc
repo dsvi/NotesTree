@@ -15,5 +15,8 @@
         <file alias="strikethrough">ico/strikethrough.svg</file>
         <file alias="underline">ico/underline.svg</file>
         <file alias="header">ico/font-size.svg</file>
+        <file alias="attachment">ico/attachment.svg</file>
+        <file alias="attachment-add">ico/attachment_add.svg</file>
+        <file alias="search">ico/search.svg</file>
     </qresource>
 </RCC>

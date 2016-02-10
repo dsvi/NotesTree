@@ -9,6 +9,7 @@ NotesTree::NotesTree(QWidget *parent) :
 
 void NotesTree::root(Note *root)
 {
+	ASSERT(notesTreeModel_.noteAt(QModelIndex()) == nullptr); // should be called only once
 	notesTreeModel_.root(root);
 	auto treeView = ui.notesView;
 	treeView->setModel(&notesTreeModel_);
@@ -31,6 +32,23 @@ void NotesTree::root(Note *root)
 	removeSelected->setShortcuts(QKeySequence::Delete);
 	removeSelected->setToolTip(tr("Delete selected note and its subnotes"));
 	removeSelected->setEnabled(false);
+	app->addToolButton(this, ui.toolBoxLayout, removeSelected);
+	connect(removeSelected, &QAction::triggered, this, &NotesTree::removeSelected);
+
+	QIcon attachOpenIcon = QIcon(":/ico/attachment");
+	QIcon attachAddIcon = QIcon(":/ico/attachment-add");
+	QAction	*attach = new QAction(attachOpenIcon, QString(), this);
+	attach->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
+	attach->setEnabled(false);
+	app->addToolButton(this, ui.toolBoxLayout, attach);
+	auto setAttachOpen = [=](){
+		attach->setIcon(attachOpenIcon);
+		attach->setToolTip(tr("Open attachment folder"));
+	};
+	auto setAttachAdd = [=](){
+		attach->setIcon(attachAddIcon);
+		attach->setToolTip(tr("Add attachment"));
+	};
 	auto sm = treeView->selectionModel();
 	connect(sm, &QItemSelectionModel::selectionChanged, [=](){
 		auto selected = treeView->selectionModel()->selection();
@@ -38,10 +56,29 @@ void NotesTree::root(Note *root)
 			removeSelected->setEnabled(false);
 		else
 			removeSelected->setEnabled(true);
+		attach->setEnabled(false);
+		setAttachOpen();
+		for (auto &c : attachConnections_)
+			disconnect(c);
+		attachConnections_.clear();
+		if (selected.size() == 1){
+			attach->setEnabled(true);
+			auto ndx = selected.indexes()[0];
+			auto note = notesTreeModel_.noteAt(ndx);
+			auto n = note->note.lock();
+			if (!n)
+				return;
+			if (note->hasAttach)
+				setAttachOpen();
+			else
+				setAttachAdd();
+			attachConnections_.push_back(connect(n.get(), &Note::attachReady, this, [=](const QString &attachDirPath){
+				QDesktopServices::openUrl(QUrl("file://" + attachDirPath));
+				setAttachOpen();
+			}));
+			attachConnections_.push_back(connect(attach, &QAction::triggered, n.get(), &Note::attach));
+		}
 	});
-	connect(removeSelected, &QAction::triggered, this, &NotesTree::removeSelected);
-	app->addToolButton(this, ui.toolBoxLayout, removeSelected);
-
 	ui.toolBoxLayout->addStretch();
 }
 

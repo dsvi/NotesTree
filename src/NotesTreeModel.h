@@ -11,6 +11,7 @@ class NoteInTree : public QObject
 public:
 	NoteInTree(std::weak_ptr<Note> n, QThread *viewThread);
 	QString name;
+	bool    hasAttach;
 	std::weak_ptr<Note> note;
 	NotesTreeModel *model;
 	QModelIndex     mdlNdx;
@@ -26,6 +27,7 @@ public slots:
 	void addSubnote(std::shared_ptr<NoteInTree> n);
 	void removeThis();
 	void nameChanged(const QString &name);
+	void gotAttach();
 private:
 	void sortKids();
 };

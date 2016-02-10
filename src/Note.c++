@@ -13,6 +13,13 @@ Note::~Note()
 {
 }
 
+bool Note::hasAttach()
+{
+	if (parent_)
+		return exists(attachDir());
+	return false;
+}
+
 QString Note::decodeFromFilename(const boost::filesystem::path &filename)
 {
 	QString ret;
@@ -242,6 +249,7 @@ void Note::addNote(std::shared_ptr<Note> note)
 {
 	note->parent_ = this;
 	subNotes_.push_back(note);
+	note->cleanUpFileSystem();
 	emitAddNoteRecursively(note);
 }
 
@@ -563,6 +571,20 @@ void Note::save(QString html)
 void Note::stopEditing()
 {
 	urlsPatch_.clear();
+}
+
+void Note::attach()
+{
+	try{
+		if (!parent_)
+			return;
+		auto a = attachDir();
+		create_directory(a);
+		emit attachReady(toQS(a));
+	}
+	catch(...){
+		warning(tr("Can't create attachment directory."));
+	}
 }
 
 

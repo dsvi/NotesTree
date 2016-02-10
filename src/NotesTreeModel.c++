@@ -160,6 +160,7 @@ NoteInTree::NoteInTree(std::weak_ptr<Note> n, QThread *viewThread) : QObject(nul
 	ASSERT(ns);
 	auto note = ns.get();
 	this->name = note->name();
+	this->hasAttach = note->hasAttach();
 	this->note = n;
 	connect(this, &NoteInTree::changeName, note, &Note::changeName);
 	connect(note, &Note::nameChanged, this, &NoteInTree::nameChanged);
@@ -176,6 +177,7 @@ NoteInTree::NoteInTree(std::weak_ptr<Note> n, QThread *viewThread) : QObject(nul
 	});
 
 	connect(note, &Note::noteRemoved, this, &NoteInTree::removeThis);
+	connect(note, &Note::attachReady, this, &NoteInTree::gotAttach);
 }
 
 void NoteInTree::addSubnote(std::shared_ptr<NoteInTree> n)
@@ -209,6 +211,11 @@ void NoteInTree::nameChanged(const QString &name)
 	model->layoutAboutToBeChanged();
 	parent->sortKids();
 	model->layoutChanged();
+}
+
+void NoteInTree::gotAttach()
+{
+	hasAttach = true;
 }
 
 void NoteInTree::sortKids()

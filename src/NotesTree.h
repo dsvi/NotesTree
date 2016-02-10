@@ -12,7 +12,7 @@ class NotesTree : public QWidget
 
 public:
 	explicit NotesTree(QWidget *parent = 0);
-
+	/// should be called only once
 	void root(Note *root);
 signals:
 	void noteActivated(std::weak_ptr<Note> n);
@@ -24,6 +24,7 @@ private slots:
 private:
 	Ui::NotesTree ui;
 	NotesTreeModel  notesTreeModel_;
+	std::vector<QMetaObject::Connection> attachConnections_;
 };
 
 #endif // NOTESTREE_H

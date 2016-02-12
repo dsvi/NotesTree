@@ -49,7 +49,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	{
 		auto act = page->action(QWebPage::ToggleStrikethrough);
 		act->setIcon(QIcon(":/ico/strikethrough"));
-		//act->setShortcut(QKeySequence::Stre);
+		act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
 		app->addToolButton(this, ui.toolBoxLayout, act);
 	}
 	app->addToolBoxSpacer(ui.toolBoxLayout);
@@ -147,7 +147,8 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		QAction *search = new QAction(this);
 		search->setIcon(QIcon(":/ico/search"));
 		search->setToolTip(tr("Find text in the note"));
-		search->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
+		//search->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
+		search->setShortcut(QKeySequence::Find);
 		search->setCheckable(true);
 		auto target = ui.searchPanel->height();
 		ui.searchPanel->hide();

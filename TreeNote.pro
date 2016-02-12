@@ -19,6 +19,17 @@ CONFIG(debug, debug|release) {
   DEFINES += DEBUG
 }
 
+CONFIG(release, debug|release) {
+  DEFINES += NDEBUG
+}
+
+# remove possible other optimization flags
+QMAKE_CXXFLAGS_RELEASE -= -O1
+QMAKE_CXXFLAGS_RELEASE -= -O2
+
+# add the desired -O3 if not present
+QMAKE_CXXFLAGS_RELEASE += -O3
+
 PRECOMPILED_HEADER = src/precomp.h
 INCLUDEPATH += src
 

@@ -159,9 +159,11 @@ NoteEditor::NoteEditor(QWidget *parent) :
 				ui.searchPanel->setMaximumHeight(0);
 				ui.searchPanel->show();
 				ui.searchFor->setFocus();
-				highlightFoundText();
 				animation->setStartValue(0);
 				animation->setEndValue(target);
+				connect(animation, &QAbstractAnimation::finished, [=]{
+					highlightFoundText();
+				});
 			}
 			else{
 				unHighlightFoundText();
@@ -170,7 +172,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 					ui.searchPanel->hide();
 				});
 			}
-			animation->start();
+			animation->start(QAbstractAnimation::DeleteWhenStopped);
 		});
 		connect(ui.searchFor, &QLineEdit::textChanged, [=](){
 			highlightFoundText();

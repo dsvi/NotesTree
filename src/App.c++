@@ -53,10 +53,12 @@ void BuildErrorMsg(const std::exception& e, QString &msg){
 	}
 }
 
-void App::showErrorDilogSlot(std::exception_ptr eptr)
+void App::showErrorDilogSlot(std::exception_ptr eptr, const QString &action)
 {
 	QString msg;
 	msg.reserve(2000);
+	msg += action;
+	msg += '\n';
 	try {
 		std::rethrow_exception(eptr);
 	} catch(const std::exception& e) {

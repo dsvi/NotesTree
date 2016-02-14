@@ -28,10 +28,12 @@ public:
 signals:
 	/// informs user about an error, and quits app if \p e and none of it's nested are derived from RecoverableException
 	void error(std::exception_ptr e);
-	void reportError(std::exception_ptr e);
+	/// informs user about an error
+	/// \param action description of what app was doing when the error occured
+	void reportError(std::exception_ptr e, const QString &action = QString());
 	void reportErrorMsg(const QString &e);
 public slots:
-	void showErrorDilogSlot(std::exception_ptr e);
+	void showErrorDilogSlot(std::exception_ptr e, const QString &action = QString());
 	void errorSlot(std::exception_ptr e);
 	void errorMsgSlot(const QString &e);
 

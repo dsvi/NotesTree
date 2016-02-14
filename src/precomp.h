@@ -19,8 +19,11 @@
 #include <QToolButton>
 #include <QtWebKitWidgets>
 
-#include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
+#include <boost/property_tree/info_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include <atomic>
 #include <cstring>

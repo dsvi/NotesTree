@@ -32,24 +32,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menuBar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>918</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuMenu">
-    <property name="title">
-     <string>Menu</string>
-    </property>
-    <addaction name="actionSubmenu"/>
-    <addaction name="actionYet_another"/>
-   </widget>
-   <addaction name="menuMenu"/>
-  </widget>
   <action name="actionSubmenu">
    <property name="text">
     <string>Submenu</string>

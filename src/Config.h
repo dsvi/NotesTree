@@ -46,13 +46,12 @@ std::basic_ostream<Ch, Traits>&	operator << (std::basic_ostream<Ch, Traits>&s, c
 template <typename Ch, typename Traits>
 std::basic_istream<Ch, Traits>&	operator >> (std::basic_istream<Ch, Traits>&s, QByteArray &ba){
 	while(true) {
-		char c;
-		s >> c;
+		auto c = s.peek();
 		if (!s.good())
 			break;
+		s.get();
 		ba.append(c);
 	}
-	s.clear(s.rdstate() & ~std::ios_base::failbit);
 	ba = QByteArray::fromHex(ba);
 	return s;
 }

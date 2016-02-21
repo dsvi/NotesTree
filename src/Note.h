@@ -17,6 +17,7 @@ signals:
 	void noteRemoved();
 	void nameChanged(const QString &name);
 	void noteTextRdy(const QString &txt, const QString &basePath);
+	void notePlainTextRdy(const QString &txt);
 	void attachReady(const QString &attachDirPath);
 public slots:
 
@@ -39,6 +40,9 @@ public slots:
 	void startEditing();
 	void save(QString html);
 	void stopEditing();
+
+	// emits notePlainTextRdy
+	void getNotePlainTxt();
 
 	/// creates attach, if did not exist. emits attachReady, if done
 	void attach();

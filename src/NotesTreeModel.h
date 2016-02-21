@@ -11,13 +11,26 @@ class NoteInTree : public QObject
 public:
 	NoteInTree(std::weak_ptr<Note> n, QThread *viewThread);
 	QString name;
-	bool    hasAttach;
 	std::weak_ptr<Note> note;
 	NotesTreeModel *model;
 	QModelIndex     mdlNdx;
-
+	bool    hasAttach;
+	bool    isMarked = false;
 	NoteInTree *parent;
 	std::vector<std::shared_ptr<NoteInTree>> children;
+	std::vector<NoteInTree*> shown;
+	enum SearchType{
+		WholePhrase,
+		AllTheWords,
+	};
+	/// mark all nodes which have @str in text or name
+	void markAll(const QString &str, SearchType);
+	/// resets marked flag recursively.
+	void showAndResetMarksAll();
+private:
+	bool    isLoadStarted = false;
+	QString cachedTxt;
+	std::vector<QString> keywords_;
 signals:
 	void changeName(const QString &name);
 	void adopt(const std::vector<std::weak_ptr<Note>> &list);
@@ -29,7 +42,15 @@ public slots:
 	void nameChanged(const QString &name);
 	void gotAttach();
 private:
-	void sortKids();
+	void sortShown();
+	/// makes the note and all its parents shown
+	void showFromHereToParent();
+
+	std::vector<QString> &keywords();
+	void markAll();
+	void mark();
+	void hideAndResetMarksAll();
+
 };
 
 Q_DECLARE_METATYPE(std::shared_ptr<NoteInTree>)
@@ -73,6 +94,8 @@ public slots:
 	void addNote(const QModelIndex &parentNote, const QString &name);
 	void removeNotes(const QModelIndexList &noteNdx);
 
+	void searchFor(const QString &str, NoteInTree::SearchType);
+	void endSearch();
 private:
 	std::unique_ptr<NoteInTree> root_;
 	Note      *rootNote_;

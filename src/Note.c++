@@ -573,6 +573,28 @@ void Note::stopEditing()
 	urlsPatch_.clear();
 }
 
+void Note::getNotePlainTxt()
+{
+	QString html = loadTxt();
+	QString txt;
+	txt.reserve(html.size());
+	bool skipTillEndOfTag = false;
+	for (auto it = html.begin(); it != html.end(); ++it){
+		if (skipTillEndOfTag){
+			if (*it == '>')
+				skipTillEndOfTag = false;
+			continue;
+		}
+		if (*it == '<'){
+			skipTillEndOfTag = true;
+			continue;
+		}
+		txt.append(*it);
+	}
+	txt = txt.simplified();
+	emit notePlainTextRdy(txt);
+}
+
 void Note::attach()
 {
 	try{

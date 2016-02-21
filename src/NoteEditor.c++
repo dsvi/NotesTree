@@ -150,7 +150,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		//search->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
 		search->setShortcut(QKeySequence::Find);
 		search->setCheckable(true);
-		auto target = ui.searchPanel->height();
+		auto target = ui.searchPanel->sizeHint().height();
 		ui.searchPanel->hide();
 		connect(search, &QAction::triggered, [=](bool checked){
 			QPropertyAnimation *animation = new QPropertyAnimation(ui.searchPanel, "maximumHeight");
@@ -161,6 +161,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 				ui.searchFor->setFocus();
 				animation->setStartValue(0);
 				animation->setEndValue(target);
+				// animating blured web edit is slow, so blur only after the animation
 				connect(animation, &QAbstractAnimation::finished, [=]{
 					highlightFoundText();
 				});

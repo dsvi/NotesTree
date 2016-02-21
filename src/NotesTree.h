@@ -16,10 +16,12 @@ public:
 	void root(Note *root);
 signals:
 	void noteActivated(std::weak_ptr<Note> n);
-
 private slots:
 	void addNew();
 	void removeSelected();
+
+	void searchFor(const QString &str, NoteInTree::SearchType t);
+	void endSearch();
 
 private:
 	Ui::NotesTree ui;

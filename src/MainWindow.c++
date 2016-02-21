@@ -41,7 +41,7 @@ MainWindow::~MainWindow()
 void MainWindow::closeEvent(QCloseEvent *ev)
 {
 	ui->noteEditor->save();
-	Config::ptree pt;
+	Config::ptree pt = app->cfg()->laodUnimportantConfig();
 	auto sz = size();
 	pt.put("MainWindow.width", sz.width());
 	pt.put("MainWindow.height", sz.height());

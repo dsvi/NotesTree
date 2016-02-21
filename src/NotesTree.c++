@@ -80,6 +80,58 @@ void NotesTree::root(Note *root)
 		}
 	});
 	ui.toolBoxLayout->addStretch();
+	{
+		ui.searchType->insertItem(NoteInTree::SearchType::WholePhrase, tr("whole phrase"));
+		ui.searchType->insertItem(NoteInTree::SearchType::AllTheWords, tr("all of the words"));
+		Config::ptree pt = app->cfg()->laodUnimportantConfig();
+		auto t = pt.get_optional<uint>("NotesTree.searchType");
+		if (t)
+			ui.searchType->setCurrentIndex(*t);
+		connect(qApp, &QCoreApplication::aboutToQuit, [=](){
+			Config::ptree pt = app->cfg()->laodUnimportantConfig();
+			pt.put("NotesTree.searchType", ui.searchType->currentIndex());
+			app->cfg()->saveUnimportantConfig(pt);
+		});
+	}
+	{
+		QAction *search = new QAction(this);
+		search->setIcon(QIcon(":/ico/search"));
+		search->setToolTip(tr("Filter notes"));
+		//search->setShortcut(QKeySequence(Qt::ALT + Qt::Key_F));
+		//search->setShortcut(QKeySequence::Find);
+		search->setCheckable(true);
+		auto doSearch = [=](){
+			searchFor(ui.searchFor->text(), NoteInTree::SearchType(ui.searchType->currentIndex()));
+		};
+		auto target = ui.searchPanel->sizeHint().height();
+		ui.searchPanel->hide();
+		connect(search, &QAction::triggered, [=](bool checked){
+			QPropertyAnimation *animation = new QPropertyAnimation(ui.searchPanel, "maximumHeight");
+			animation->setDuration(250);
+			if (checked){
+				ui.searchPanel->setMaximumHeight(0);
+				ui.searchPanel->show();
+				ui.searchFor->setFocus();
+				animation->setStartValue(0);
+				animation->setEndValue(target);
+				doSearch();
+//				connect(animation, &QAbstractAnimation::finished, [=]{
+//				});
+			}
+			else{
+				endSearch();
+				animation->setEndValue(0);
+				connect(animation, &QAbstractAnimation::finished, [=]{
+					ui.searchPanel->hide();
+				});
+			}
+			animation->start(QAbstractAnimation::DeleteWhenStopped);
+		});
+
+		connect(ui.searchFor, &QLineEdit::textChanged, doSearch);
+		connect(ui.searchType, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), doSearch);
+		app->addToolButton(this, ui.toolBoxLayout, search);
+	}
 }
 
 void NotesTree::addNew()
@@ -117,4 +169,14 @@ void NotesTree::removeSelected()
 	if ( dialog.exec() != QMessageBox::Yes )
 		return;
 	notesTreeModel_.removeNotes(selected);
+}
+
+void NotesTree::searchFor(const QString &str, NoteInTree::SearchType t )
+{
+	notesTreeModel_.searchFor(str, t);
+}
+
+void NotesTree::endSearch()
+{
+	notesTreeModel_.endSearch();
 }

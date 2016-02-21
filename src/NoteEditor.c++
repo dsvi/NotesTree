@@ -8,14 +8,15 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	ui.setupUi(this);
 	connect(&autosaveTimer_, &QTimer::timeout, this, &NoteEditor::save);
 	auto settings = ui.noteEdit->settings();
-	auto systemFont = QGuiApplication::font();
+	auto systemFont = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
+	auto systemFixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 	settings->setFontFamily(QWebSettings::FontFamily::StandardFont, systemFont.family());
+	settings->setFontFamily(QWebSettings::FontFamily::FixedFont, systemFixedFont.family());
+	settings->setFontSize(QWebSettings::FontSize::DefaultFontSize,  systemFont.pointSize()+1);
+	settings->setFontSize(QWebSettings::FontSize::DefaultFixedFontSize, systemFixedFont.pointSize()+1);
 	auto screen = QGuiApplication::primaryScreen();
-	// pt is supposed to be 1/72 of inch, but QT seem to assume 1/96
-	//int fontSize = screen->physicalDotsPerInchX() * systemFont.pointSize() / 72;
-	int fontSize = screen->physicalDotsPerInchX() * systemFont.pointSize() / 96;
-	settings->setFontSize(QWebSettings::FontSize::DefaultFontSize, fontSize);
-	settings->setFontSize(QWebSettings::FontSize::DefaultFixedFontSize, fontSize);
+	qreal zoom = screen->physicalDotsPerInchX() / 96;
+	ui.noteEdit->setZoomFactor(zoom);
 	auto page = ui.noteEdit->page();
 	page->setContentEditable(true);
 	page->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);

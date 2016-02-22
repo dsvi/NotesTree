@@ -105,8 +105,11 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	{
 		auto act = new QAction(this);
 		act->setIcon(QIcon(":/ico/remove style"));
-		act->setToolTip(tr("Remove styles"));
-		connect(act, &QAction::triggered, [=]{
+		act->setToolTip(tr("Remove colors or formatting"));
+		QMenu *menu = new QMenu(this);
+		auto remStyles = menu->addAction(tr("remove styles (colors)"));
+		auto remFormat = menu->addAction(tr("to plain text"));
+		connect(remStyles, &QAction::triggered, [=]{
 			QString html = ui.noteEdit->selectedHtml();
 			QString newHtml;
 			QRegExp reg("<[^>]+(style\\s*=\\s*\"[^\"]*\")");
@@ -132,6 +135,42 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			auto frame = ui.noteEdit->page()->mainFrame();
 			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
 			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(newHtml);
+			frame->evaluateJavaScript(js);
+		});
+		connect(remFormat, &QAction::triggered, [=]{
+			QString txt = ui.noteEdit->selectedText();
+			txt.replace("\n","\\n");
+			txt.replace("\r","\\r");
+			txt.replace("\'","\\'");
+			auto frame = ui.noteEdit->page()->mainFrame();
+			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
+			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
+			frame->evaluateJavaScript(js);
+		});
+		act->setMenu(menu);
+		act->setEnabled(false);
+		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+			if (ui.noteEdit->selectedText().isEmpty())
+				act->setEnabled(false);
+			else
+				act->setEnabled(true);
+		});
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
+	{
+		auto act = new QAction(this);
+		act->setIcon(QIcon(":/ico/preformatted"));
+		act->setToolTip(tr("Monospaced preformatted text"));
+		connect(act, &QAction::triggered, [=]{
+			QString txt = ui.noteEdit->selectedText();
+			txt.replace("\n","\\n");
+			txt.replace("\r","\\r");
+			txt.replace("\'","\\'");
+			txt.prepend("<pre>");
+			txt.append("</pre>");
+			auto frame = ui.noteEdit->page()->mainFrame();
+			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
+			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
 			frame->evaluateJavaScript(js);
 		});
 		act->setEnabled(false);

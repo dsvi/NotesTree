@@ -8,7 +8,6 @@
         <file alias="bold">ico/bold.svg</file>
         <file alias="italic">ico/italic.svg</file>
         <file alias="remove">ico/minus.svg</file>
-        <file alias="remove style">ico/pencil.svg</file>
         <file alias="add">ico/plus.svg</file>
         <file alias="subscript">ico/subscript.svg</file>
         <file alias="superscript">ico/superscript.svg</file>
@@ -18,5 +17,7 @@
         <file alias="attachment">ico/attachment.svg</file>
         <file alias="attachment-add">ico/attachment_add.svg</file>
         <file alias="search">ico/search.svg</file>
+        <file alias="remove style">ico/clear-formatting.svg</file>
+        <file alias="preformatted">ico/terminal.svg</file>
     </qresource>
 </RCC>

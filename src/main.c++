@@ -2,7 +2,7 @@
 #include "MainWindow.h"
 #include "App.h"
 
-
+#ifdef DEBUG
 void MessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
 		QByteArray localMsg = msg.toLocal8Bit();
@@ -25,6 +25,7 @@ void MessageOutput(QtMsgType type, const QMessageLogContext &context, const QStr
 				abort();
 		}
 }
+#endif
 
 int main(int argc, char *argv[])
 {

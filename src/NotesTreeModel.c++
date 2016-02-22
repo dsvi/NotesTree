@@ -27,6 +27,8 @@ QVariant NotesTreeModel::data(const QModelIndex &index, int role) const
 		return QVariant();
 	NoteInTree *item = noteAt(index);
 	auto ret = item->name;
+//	if (role == Qt::DisplayRole && item->hasAttach)
+//		ret.prepend("📎");
 	if (role == Qt::DisplayRole && item->isMarked)
 		ret.prepend("✅");
 	return ret;

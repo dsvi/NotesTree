@@ -28,10 +28,15 @@ void App::addToolButton(QWidget *parent, QBoxLayout *l, QAction *a)
 {
 	auto b = new QToolButton(parent);
 	b->setAutoRaise(true);
-	b->setIconSize(QSize(4*hmm_, 4*vmm_));
+	float w = 4*hmm_;
+	float h = 4*hmm_;
 	b->setDefaultAction(a);
-	if (a->menu())
+	b->setIconSize(QSize(w, h));
+	if (a->menu()){
 		b->setPopupMode(QToolButton::InstantPopup);
+		w += 2.5f*hmm_;
+	}
+	b->setFixedSize(QSize(w, h));
 	l->addWidget(b);
 }
 

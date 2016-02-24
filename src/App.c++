@@ -58,7 +58,7 @@ void BuildErrorMsg(const std::exception& e, QString &msg){
 	}
 }
 
-void App::showErrorDilogSlot(std::exception_ptr eptr, const QString &action)
+QString App::errorMessage(std::exception_ptr eptr, const QString &action)
 {
 	QString msg;
 	msg.reserve(2000);
@@ -69,7 +69,12 @@ void App::showErrorDilogSlot(std::exception_ptr eptr, const QString &action)
 	} catch(const std::exception& e) {
 		BuildErrorMsg(e, msg);
 	}
-	errorMsgSlot(msg);
+	return msg;
+}
+
+void App::showErrorDilogSlot(std::exception_ptr eptr, const QString &action)
+{
+	errorMsgSlot(errorMessage(eptr, action));
 }
 
 void App::errorSlot(std::exception_ptr e)

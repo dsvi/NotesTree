@@ -25,6 +25,8 @@ public:
 	void addToolButton(QWidget *parent, QBoxLayout *l, QAction *a);
 	void addToolBoxSpacer(QBoxLayout *l);
 
+	QString errorMessage(std::exception_ptr e, const QString &action = QString());
+
 signals:
 	/// informs user about an error, and quits app if \p e and none of it's nested are derived from RecoverableException
 	void error(std::exception_ptr e);

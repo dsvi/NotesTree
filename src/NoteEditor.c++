@@ -139,8 +139,8 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 		connect(remFormat, &QAction::triggered, [=]{
 			QString txt = ui.noteEdit->selectedText();
-			txt.replace("\n","\\n");
-			txt.replace("\r","\\r");
+			txt.replace("\n","<br>");
+			txt.replace("\r","<br>");
 			txt.replace("\'","\\'");
 			auto frame = ui.noteEdit->page()->mainFrame();
 			frame->evaluateJavaScript("document.execCommand('delete',false,'');");

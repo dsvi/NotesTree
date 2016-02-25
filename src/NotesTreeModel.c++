@@ -287,7 +287,7 @@ void NoteInTree::markAll()
 		if (n){
 			connect(n.get(), &Note::notePlainTextRdy, this, [=](const QString &txt){
 				disconnect(n.get(), &Note::notePlainTextRdy, this, 0);
-				cachedTxt = txt;
+				cachedTxt = txt + name;
 				mark();
 			});
 			QMetaObject::invokeMethod(n.get(),"getNotePlainTxt", Qt::QueuedConnection);

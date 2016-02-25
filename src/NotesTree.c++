@@ -97,7 +97,7 @@ void NotesTree::root(Note *root)
 		QAction *search = new QAction(this);
 		search->setIcon(QIcon(":/ico/search"));
 		search->setToolTip(tr("Filter notes"));
-		//search->setShortcut(QKeySequence(Qt::ALT + Qt::Key_F));
+		search->setShortcut(QKeySequence(Qt::SHIFT + Qt::Key_F));
 		//search->setShortcut(QKeySequence::Find);
 		search->setCheckable(true);
 		auto doSearch = [=](){

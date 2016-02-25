@@ -19,5 +19,6 @@
         <file alias="search">ico/search.svg</file>
         <file alias="remove style">ico/clear-formatting.svg</file>
         <file alias="preformatted">ico/terminal.svg</file>
+        <file alias="link">ico/link.svg</file>
     </qresource>
 </RCC>

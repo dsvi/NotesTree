@@ -104,6 +104,63 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	}
 	{
 		auto act = new QAction(this);
+		act->setIcon(QIcon(":/ico/preformatted"));
+		act->setToolTip(tr("Monospaced preformatted text"));
+		connect(act, &QAction::triggered, [=]{
+			QString txt = ui.noteEdit->selectedText();
+			txt.replace("\n","\\n");
+			txt.replace("\r","\\r");
+			txt.replace("\'","\\'");
+			txt.prepend("<pre>");
+			txt.append("</pre>");
+			auto frame = ui.noteEdit->page()->mainFrame();
+			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
+			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
+			frame->evaluateJavaScript(js);
+		});
+		act->setEnabled(false);
+		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+			if (ui.noteEdit->selectedText().isEmpty())
+				act->setEnabled(false);
+			else
+				act->setEnabled(true);
+		});
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
+	{
+		auto act = new QAction(this);
+		act->setIcon(QIcon(":/ico/link"));
+		act->setToolTip(tr("Make link"));
+		connect(act, &QAction::triggered, [=]{
+			QString txt = ui.noteEdit->selectedText();
+			QString suggest = txt.contains(" ") ? QString() : txt;
+			bool ok;
+			QString target = QInputDialog::getText(this, tr("Link target"),
+																					 tr("Link to:"), QLineEdit::Normal,
+																					 suggest, &ok);
+			if (!ok || target.isEmpty())
+				return;
+			txt.prepend(QString("<a href=\"%1\">").arg(target));
+			txt.append("</a>");
+			txt.replace("\n","\\n");
+			txt.replace("\r","\\r");
+			txt.replace("\'","\\'");
+			auto frame = ui.noteEdit->page()->mainFrame();
+			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
+			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
+			frame->evaluateJavaScript(js);
+		});
+		act->setEnabled(false);
+		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+			if (ui.noteEdit->selectedText().isEmpty())
+				act->setEnabled(false);
+			else
+				act->setEnabled(true);
+		});
+		app->addToolButton(this, ui.toolBoxLayout, act);
+	}
+	{
+		auto act = new QAction(this);
 		act->setIcon(QIcon(":/ico/remove style"));
 		act->setToolTip(tr("Remove colors or formatting"));
 		QMenu *menu = new QMenu(this);
@@ -148,31 +205,6 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			frame->evaluateJavaScript(js);
 		});
 		act->setMenu(menu);
-		act->setEnabled(false);
-		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
-			if (ui.noteEdit->selectedText().isEmpty())
-				act->setEnabled(false);
-			else
-				act->setEnabled(true);
-		});
-		app->addToolButton(this, ui.toolBoxLayout, act);
-	}
-	{
-		auto act = new QAction(this);
-		act->setIcon(QIcon(":/ico/preformatted"));
-		act->setToolTip(tr("Monospaced preformatted text"));
-		connect(act, &QAction::triggered, [=]{
-			QString txt = ui.noteEdit->selectedText();
-			txt.replace("\n","\\n");
-			txt.replace("\r","\\r");
-			txt.replace("\'","\\'");
-			txt.prepend("<pre>");
-			txt.append("</pre>");
-			auto frame = ui.noteEdit->page()->mainFrame();
-			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
-			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
-			frame->evaluateJavaScript(js);
-		});
 		act->setEnabled(false);
 		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
 			if (ui.noteEdit->selectedText().isEmpty())

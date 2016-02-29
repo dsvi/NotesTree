@@ -54,8 +54,9 @@ boost::filesystem::path Note::encodeToFilename(const QString &name)
 {
 	QString ret;
 	ret.reserve(name.size());
-	for (auto c:name){
-		if (c == delimChar || c == L'/' || c == L'\\'){
+	for (auto i = name.begin(); i != name.end(); ++i){
+		auto c = *i;
+		if (c == delimChar || c == L'/' || c == L'\\' || (i == name.begin() && c == L'.')){
 			ret += delimChar;
 			QString num;
 			num.setNum(c.unicode(), 16);
@@ -77,7 +78,7 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 		name_ = decodeFromFilename(path.filename());
 	std::unordered_map<QString, directory_entry> dirs;
 	for (auto&& x : directory_iterator(path))
-		if (x.status().type() == file_type::directory_file)
+		if (x.status().type() == file_type::directory_file && x.path().filename().native()[0] != '.')
 			dirs.insert({x.path().filename().c_str(), x});
 	for (directory_entry& fi : directory_iterator(path)){
 		if (fi.status().type() == file_type::directory_file)
@@ -112,7 +113,9 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
 		dir = dirs.erase(dir);
 	}
-	for (auto &dir : dirs){ // just in case we happened to have a note name ending on attachExt etc
+	// just in case we happened to have a note name ending on attachExt etc
+	// kinda stupid part
+	for (auto &dir : dirs){
 		const boost::filesystem::path &dirPath = dir.second.path();
 		auto subNote = make_shared<Note>();
 		subNote->name_ = decodeFromFilename(dirPath.filename());

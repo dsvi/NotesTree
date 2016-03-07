@@ -345,6 +345,7 @@ void Note::deleteSelfRecursively()
 	try{
 		remove_all(subNotesDir());
 		remove_all(attachDir());
+		remove_all(embedDir());
 		remove(textPathname());
 		removeFromParent();
 		parent_->cleanUpFileSystem();

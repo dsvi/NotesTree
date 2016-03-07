@@ -413,6 +413,10 @@ path Note::generateEmbedFilename(const boost::filesystem::path &hint)
 		return simpleCase;
 	path ext = hint.extension();
 	path pref = hint.stem();
+	if (pref.size() > 100)
+		pref = path("");
+	if (ext.size() > 100)
+		ext = path("");
 	ui32 id = 0;
 	path retFilename;
 	do{

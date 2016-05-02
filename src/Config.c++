@@ -30,7 +30,8 @@ Config::ptree Config::laodUnimportantConfig()
 	try{
 		auto path = QStandardPaths::standardLocations(QStandardPaths::CacheLocation).first().toStdString();
 		ptree pt;
-		read_info(path, pt);
+		if (exists(path))
+			read_info(path, pt);
 		return pt;
 	}
 	catch(...){

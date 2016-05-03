@@ -1,8 +1,10 @@
 #include "NotesTree.h"
 #include "AddNewNoteDialog.h"
 
+using namespace std;
+
 NotesTree::NotesTree(QWidget *parent) :
-  QWidget(parent)
+	QWidget(parent)
 {
 	ui.setupUi(this);
 }
@@ -49,13 +51,26 @@ void NotesTree::root(Note *root)
 		attach->setIcon(attachAddIcon);
 		attach->setToolTip(tr("Add attachment"));
 	};
+	QAction	*copySelected = new QAction(QIcon(":/ico/copy"), QString(), this);
+	copySelected->setShortcuts(QKeySequence::Copy);
+	copySelected->setToolTip(tr(
+		"Copy note's files to clipboard,\n"
+		"so you can later paste them anywhere in the filesystem."));
+	copySelected->setEnabled(false);
+	connect(copySelected, &QAction::triggered, this, &NotesTree::copySelectedPathsToClipboard);
+	app->addToolButton(this, ui.toolBoxLayout, copySelected);
+
 	auto sm = treeView->selectionModel();
 	connect(sm, &QItemSelectionModel::selectionChanged, [=](){
 		auto selected = treeView->selectionModel()->selection();
-		if (selected.isEmpty())
+		if (selected.isEmpty()){
 			removeSelected->setEnabled(false);
-		else
+			copySelected->setEnabled(false);
+		}
+		else{
 			removeSelected->setEnabled(true);
+			copySelected->setEnabled(true);
+		}
 		attach->setEnabled(false);
 		setAttachOpen();
 		for (auto &c : attachConnections_)
@@ -171,6 +186,37 @@ void NotesTree::removeSelected()
 	notesTreeModel_.removeNotes(selected);
 }
 
+void NotesTree::copySelectedPathsToClipboard()
+{
+	auto sm = ui.notesView->selectionModel();
+	auto selected = sm->selectedIndexes();
+	if (selected.isEmpty())
+		return;
+	vector<weak_ptr<Note>> noteWPs;
+	for(auto &ndx : selected){
+		auto wp = notesTreeModel_.noteAt(ndx)->note;
+		noteWPs.emplace_back(wp);
+	}
+	pathsCollector_ = make_unique<PathsCollector>();
+	connect(pathsCollector_.get(), &PathsCollector::collected, this, [&](const vector<QString>& lst){
+		auto tmp = std::move(pathsCollector_);
+		if (lst.empty())
+			return;
+		QString list;
+		for (auto &u : lst){
+			list.append(u);
+			list.append("\n");
+		}
+		auto data = make_unique<QMimeData>();
+		data->setData("text/uri-list", list.toUtf8());
+		list.prepend("copy\n");
+		list.resize(list.size()-1); // remove last \n
+		data->setData("x-special/gnome-copied-files", list.toUtf8());
+		QApplication::clipboard()->setMimeData(data.release());
+	});
+	pathsCollector_->startCollectingFor(noteWPs);
+}
+
 void NotesTree::searchFor(const QString &str, NoteInTree::SearchType t )
 {
 	notesTreeModel_.searchFor(str, t);
@@ -179,4 +225,26 @@ void NotesTree::searchFor(const QString &str, NoteInTree::SearchType t )
 void NotesTree::endSearch()
 {
 	notesTreeModel_.endSearch();
+}
+
+void PathsCollector::startCollectingFor(const std::vector<std::weak_ptr<Note> > &nlst)
+{
+	total_ = 0;
+	for (auto p : nlst){
+		auto sp = p.lock();
+		if (!sp)
+			continue;
+		connect(sp.get(), &Note::pathsReady, this, &PathsCollector::collect);
+		QMetaObject::invokeMethod(sp.get(), "getNoteRelatedPaths", Qt::QueuedConnection);
+		total_ ++;
+	}
+	if (total_ == 0 )
+		emit collected(vector<QString>());
+}
+
+void PathsCollector::collect(const std::vector<QString> &lst)
+{
+	uris_.insert(uris_.end(), lst.begin(), lst.end());
+	if (--total_ <= 0)
+		emit collected(uris_);
 }

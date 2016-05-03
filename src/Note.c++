@@ -617,6 +617,22 @@ void Note::attach()
 	}
 }
 
+void Note::getNoteRelatedPaths()
+{
+	vector<QString> lst;
+	auto pref = QString("file://");
+	auto text = textPathname();
+	if (exists(text))
+		lst.emplace_back(pref + urlEnc(toQS(text)));
+	auto attach = attachDir();
+	if (exists(attach))
+		lst.emplace_back(pref + urlEnc(toQS(attach)));
+	auto embed =embedDir();
+	if (exists(embed))
+		lst.emplace_back(pref + urlEnc(toQS(embed)));
+	emit pathsReady(lst);
+}
+
 
 path Note::pathToNote() const
 {

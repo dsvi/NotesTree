@@ -19,6 +19,7 @@ signals:
 	void noteTextRdy(const QString &txt, const QString &basePath);
 	void notePlainTextRdy(const QString &txt);
 	void attachReady(const QString &attachDirPath);
+	void pathsReady(const std::vector<QString> &paths);
 public slots:
 
 	/// create hierarchy of notes and subnotes from the root folder
@@ -41,13 +42,16 @@ public slots:
 	void save(QString html);
 	void stopEditing();
 
-	// emits notePlainTextRdy
+	/// emits notePlainTextRdy
 	void getNotePlainTxt();
 
 	/// creates attach, if did not exist. emits attachReady, if done
 	void attach();
+
+	/// emits pathsReady() with the list of file URLs for note text file, attach dir and embed dir, if available.
+	void getNoteRelatedPaths();
 private:
-	Note     *parent_ = nullptr; 	/// nullptr means this is root
+	Note     *parent_ = nullptr; 	// nullptr means this is root
 	QString		name_; // root has path to root here, instead of name
 	bool      isZombie(){  // the method is only valid for root
 		return name_.isNull();

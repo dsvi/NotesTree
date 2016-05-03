@@ -9,11 +9,8 @@ QT += widgets webkitwidgets network
 CONFIG += precompile_header
 CONFIG += c++14
 
-#QMAKE_CXXFLAGS += -std=c++14
-#QMAKE_LFLAGS   += -std=c++14
-
-№QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++14
-№QMAKE_LFLAGS   += -stdlib=libc++ -std=c++14
+#QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++14
+#QMAKE_LFLAGS   += -stdlib=libc++ -std=c++14
 
 INCLUDEPATH += /home/ds/boost
 LIBS += -L/home/ds/boost/stage/lib -lboost_filesystem -lboost_system

@@ -12,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	qRegisterMetaType<std::weak_ptr<Note>>();
 	qRegisterMetaType<std::vector<std::weak_ptr<Note>>>();
 	qRegisterMetaType<std::shared_ptr<NoteInTree>>();
+	qRegisterMetaType<std::vector<QString>>();
 
 	rootNote_.moveToThread(app->ioThread());
 	//connect(this, &NotesTreeModel::loadFrom, rootNote_, &Note::createHierarchyFromRoot);

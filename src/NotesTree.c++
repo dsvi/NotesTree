@@ -235,9 +235,10 @@ void PathsCollector::startCollectingFor(const std::vector<std::weak_ptr<Note> > 
 		if (!sp)
 			continue;
 		connect(sp.get(), &Note::pathsReady, this, &PathsCollector::collect);
-		QMetaObject::invokeMethod(sp.get(), "getNoteRelatedPaths", Qt::QueuedConnection);
+		connect(this, &PathsCollector::givePaths, sp.get(), &Note::getNoteRelatedPaths);
 		total_ ++;
 	}
+	givePaths();
 	if (total_ == 0 )
 		emit collected(vector<QString>());
 }

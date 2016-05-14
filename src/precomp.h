@@ -32,6 +32,7 @@
 #include <iostream>
 #include <memory>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <stack>
 #include <unordered_map>
@@ -45,10 +46,10 @@
 namespace std{
 template<>
 struct hash<class QString>{
-  size_t operator()(const QString &s) const
-  {
-    return qHash(s);
-  }
+	size_t operator()(const QString &s) const
+	{
+		return qHash(s);
+	}
 };
 }
 

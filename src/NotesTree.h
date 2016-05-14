@@ -14,6 +14,7 @@ public slots:
 	void collect(const std::vector<QString> &);
 signals:
 	void collected(const std::vector<QString> &uris);
+	void givePaths();
 private:
 	std::vector<QString> uris_;
 	int                  total_;

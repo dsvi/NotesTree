@@ -12,8 +12,8 @@ CONFIG += c++14
 #QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++14
 #QMAKE_LFLAGS   += -stdlib=libc++ -std=c++14
 
-INCLUDEPATH += /home/ds/boost
-LIBS += -L/home/ds/boost/stage/lib -lboost_filesystem -lboost_system
+INCLUDEPATH += $$HOME/boost
+LIBS += -L$$HOME/boost/stage/lib -lboost_filesystem -lboost_system
 
 CONFIG(debug, debug|release) {
   DEFINES += DEBUG

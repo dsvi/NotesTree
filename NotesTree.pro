@@ -1,19 +1,28 @@
 TEMPLATE = app
 QMAKE_EXT_CPP += c++
-OBJECTS_DIR = ./tmp
-MOC_DIR = ./tmp
-UI_DIR = ./tmp
-RCC_DIR = ./tmp
-#TARGET =
-QT += widgets webkitwidgets network
+
+TMP = ./tmp
+OBJECTS_DIR = $$TMP
+MOC_DIR = $$TMP
+UI_DIR = $$TMP
+RCC_DIR = $$TMP
+
+target.path = /usr/bin
+INSTALLS += target
+desktop.path = /usr/share/applications
+desktop.files = NotesTree.desktop
+INSTALLS += desktop
+icons.path = /usr/share/icons/hicolor/scalable/apps/
+icons.files = NotesTree.svg
+INSTALLS += icons
+
+
+
+QT += widgets webkitwidgets network svg
 CONFIG += precompile_header
 CONFIG += c++14
 
-#QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++14
-#QMAKE_LFLAGS   += -stdlib=libc++ -std=c++14
-
-INCLUDEPATH += $$HOME/boost
-LIBS += -L$$HOME/boost/stage/lib -lboost_filesystem -lboost_system
+LIBS += -lboost_filesystem -lboost_system
 
 CONFIG(debug, debug|release) {
   DEFINES += DEBUG
@@ -29,6 +38,7 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 
 # add the desired -O3 if not present
 QMAKE_CXXFLAGS_RELEASE += -O3
+
 
 PRECOMPILED_HEADER = src/precomp.h
 INCLUDEPATH += src
@@ -70,5 +80,6 @@ FORMS    += src/MainWindow.ui \
     src/AddNewNoteDialog.ui \
     src/NoteEditor.ui \
     src/NotesTree.ui
+
 
 

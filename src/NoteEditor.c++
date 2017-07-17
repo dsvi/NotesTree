@@ -136,8 +136,8 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			QString suggest = txt.contains(" ") ? QString() : txt;
 			bool ok;
 			QString target = QInputDialog::getText(this, tr("Link target"),
-																					 tr("Link to:"), QLineEdit::Normal,
-																					 suggest, &ok);
+			                                     tr("Link to:"), QLineEdit::Normal,
+			                                     suggest, &ok);
 			if (!ok || target.isEmpty())
 				return;
 			txt.prepend(QString("<a href=\"%1\">").arg(target));

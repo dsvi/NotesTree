@@ -6,3 +6,4 @@ What makes it different?
 * You can store complete web pages, simply by copy-pasting a page into a note. NotesTree automatically downloads all the images, making the note available offline.
 * You can attach files of any types to your notes.
 
+![screenshot](screenshot.png) 

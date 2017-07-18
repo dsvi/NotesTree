@@ -12,11 +12,9 @@ INSTALLS += target
 desktop.path = /usr/share/applications
 desktop.files = NotesTree.desktop
 INSTALLS += desktop
-icons.path = /usr/share/icons/hicolor/scalable/apps/
+icons.path = /usr/share/pixmaps
 icons.files = NotesTree.svg
 INSTALLS += icons
-
-
 
 QT += widgets webkitwidgets network svg
 CONFIG += precompile_header
@@ -35,7 +33,6 @@ CONFIG(release, debug|release) {
 # remove possible other optimization flags
 QMAKE_CXXFLAGS_RELEASE -= -O1
 QMAKE_CXXFLAGS_RELEASE -= -O2
-
 # add the desired -O3 if not present
 QMAKE_CXXFLAGS_RELEASE += -O3
 
@@ -60,8 +57,6 @@ RESOURCES += res/qml.qrc
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
-
-# Default rules for deployment.
 
 HEADERS +=  src/precomp.h \
     src/Note.h \

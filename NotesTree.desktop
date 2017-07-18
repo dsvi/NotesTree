@@ -2,9 +2,9 @@
 Encoding=UTF-8
 Version=1.0
 Type=Application
-Name=TreeNote
+Name=Notes Tree
 Comment=Note taking app
-Icon=TreeNote
-Exec=TreeNote
+Icon=NotesTree
+Exec=NotesTree
+Categories=TextTools;
 
-Name[en_AU]=NotesTree.desktop

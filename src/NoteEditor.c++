@@ -14,9 +14,6 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	settings->setFontFamily(QWebSettings::FontFamily::FixedFont, systemFixedFont.family());
 	settings->setFontSize(QWebSettings::FontSize::DefaultFontSize,  systemFont.pointSize()+1);
 	settings->setFontSize(QWebSettings::FontSize::DefaultFixedFontSize, systemFixedFont.pointSize()+1);
-	auto screen = QGuiApplication::primaryScreen();
-	qreal zoom = screen->physicalDotsPerInchX() / 96;
-	ui.noteEdit->setZoomFactor(zoom);
 	auto page = ui.noteEdit->page();
 	page->setContentEditable(true);
 	page->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);

@@ -6,12 +6,13 @@ using namespace boost::property_tree;
 Config::Config(QObject *parent) : QObject(parent)
 {
 	qRegisterMetaType<boost::filesystem::path>();
-#ifdef DEBUG
+#ifdef NNNDEBUG
 	rootPath_ = toPath(QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first());
 	rootPath_ /= "OTest";
 #else
 	rootPath_ = toPath(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).first());
 #endif
+	qDebug() << rootPath_.c_str();
 	create_directories(rootPath_);
 }
 

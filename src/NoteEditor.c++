@@ -10,95 +10,70 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	auto settings = ui.noteEdit->settings();
 	auto systemFont = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 	auto systemFixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-	settings->setFontFamily(QWebSettings::FontFamily::StandardFont, systemFont.family());
-	settings->setFontFamily(QWebSettings::FontFamily::FixedFont, systemFixedFont.family());
-	settings->setFontSize(QWebSettings::FontSize::DefaultFontSize,  systemFont.pointSize()+1);
-	settings->setFontSize(QWebSettings::FontSize::DefaultFixedFontSize, systemFixedFont.pointSize()+1);
-	auto page = ui.noteEdit->page();
-	page->setContentEditable(true);
-	page->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);
-	connect(page, &QWebPage::linkClicked, [](const QUrl &url){
-		QDesktopServices::openUrl(url);
-	});
-//	connect(ui.noteEdit, &QWebView::loadFinished, [this](bool ok){
-//		if (!ok)
-//			return;
+	settings->setFontFamily(QWebEngineSettings::FontFamily::StandardFont, systemFont.family());
+	settings->setFontFamily(QWebEngineSettings::FontFamily::FixedFont, systemFixedFont.family());
+	settings->setFontSize(QWebEngineSettings::FontSize::DefaultFontSize,  systemFont.pointSize());
+	settings->setFontSize(QWebEngineSettings::FontSize::DefaultFixedFontSize, systemFixedFont.pointSize());
+
+//	auto page = ui.noteEdit->page();
+//	page->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);
+//	connect(page, &QWebPage::linkClicked, [](const QUrl &url){
+//		QDesktopServices::openUrl(url);
+//	});
+	connect(ui.noteEdit, &QWebEngineView::loadFinished, [this](bool ok){
+		if (!ok)
+			return;
+		auto palette = QApplication::palette();
+		auto textColor = palette.text().color().name();
+		auto linkColor = palette.link().color().name();
+		auto linkVisitedColor = palette.linkVisited().color().name();
+		QString css = GetResourceString(":/css").arg(textColor).arg(linkColor).arg(linkVisitedColor);
+		ui.noteEdit->page()->runJavaScript(css);
+		ui.noteEdit->page()->runJavaScript("document.documentElement.contentEditable = true");
+		if (!ui.searchPanel->isHidden())
+			highlightFoundText();
 //		auto ret = ui.noteEdit->page()->mainFrame()->evaluateJavaScript("document.execCommand('enableObjectResizing',false,true);");
 //		qDebug() << ret;
-//	});
-	{
-		auto act = page->action(QWebPage::ToggleBold);
-		act->setIcon(QIcon(":/ico/bold"));
-		act->setShortcut(QKeySequence::Bold);
-		app->addToolButton(this, ui.toolBoxLayout, act);
-	}
-	{
-		auto act = page->action(QWebPage::ToggleItalic);
-		act->setIcon(QIcon(":/ico/italic"));
-		act->setShortcut(QKeySequence::Italic);
-		app->addToolButton(this, ui.toolBoxLayout, act);
-	}
-	{
-		auto act = page->action(QWebPage::ToggleUnderline);
-		act->setIcon(QIcon(":/ico/underline"));
-		act->setShortcut(QKeySequence::Underline);
-		app->addToolButton(this, ui.toolBoxLayout, act);
-	}
-	{
-		auto act = page->action(QWebPage::ToggleStrikethrough);
-		act->setIcon(QIcon(":/ico/strikethrough"));
-		act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
-		app->addToolButton(this, ui.toolBoxLayout, act);
-	}
-	app->addToolBoxSpacer(ui.toolBoxLayout);
-	{
-		auto act = page->action(QWebPage::ToggleSuperscript);
-		act->setIcon(QIcon(":/ico/superscript"));
-		app->addToolButton(this, ui.toolBoxLayout, act);
-	}
-	{
-		auto act = page->action(QWebPage::ToggleSubscript);
-		act->setIcon(QIcon(":/ico/subscript"));
-		app->addToolButton(this, ui.toolBoxLayout, act);
-	}
-	ui.noteEdit->installEventFilter(this);
-	{
-		header_ = new QAction(this);
-		header_->setIcon(QIcon(":/ico/header"));
-		header_->setToolTip(tr("Make header from current parafraph"));
-		QMenu *menu = new QMenu(this);
-		headers_.push_back(menu->addAction(tr("Header lvl 1")));
-		headers_.push_back(menu->addAction(tr("Header lvl 2")));
-		headers_.push_back(menu->addAction(tr("Header lvl 3")));
-		headers_.push_back(menu->addAction(tr("Header lvl 4")));
-		headers_.push_back(menu->addAction(tr("Header lvl 5")));
-		headers_.push_back(menu->addAction(tr("Header lvl 6")));
-		for (auto a : headers_){
-			a->setCheckable(true);
-			a->setToolTip(tr("Set header level"));
-		}
-		header_->setMenu(menu);
-		header_->setCheckable(true);
-		for (size_t i = 0; i < headers_.size(); i++){
-			auto a = headers_[i];
-			connect(a, &QAction::triggered, [=](bool checked){
-				if (currentEl_.isNull())
-					return;
-				auto page = ui.noteEdit->page();
-				if (page == nullptr)
-					return;
-				QString tag;
-				if (checked)
-					tag = "H" + QString::number(i+1);
-				else
-					tag = "DIV";
-				header_->setChecked(checked);
-				QString js = QString("document.execCommand('formatBlock',false,'%1');").arg(tag);
-				ui.noteEdit->page()->mainFrame()->evaluateJavaScript(js);
-			});
-		}
-		app->addToolButton(this, ui.toolBoxLayout, header_);
-	}
+	});
+
+
+// No analogue in WebEngine
+//	{
+//		auto act = page->action(QWebPage::ToggleBold);
+//		act->setIcon(QIcon(":/ico/bold"));
+//		act->setShortcut(QKeySequence::Bold);
+//		app->addToolButton(this, ui.toolBoxLayout, act);
+//	}
+//	{
+//		auto act = page->action(QWebPage::ToggleItalic);
+//		act->setIcon(QIcon(":/ico/italic"));
+//		act->setShortcut(QKeySequence::Italic);
+//		app->addToolButton(this, ui.toolBoxLayout, act);
+//	}
+//	{
+//		auto act = page->action(QWebPage::ToggleUnderline);
+//		act->setIcon(QIcon(":/ico/underline"));
+//		act->setShortcut(QKeySequence::Underline);
+//		app->addToolButton(this, ui.toolBoxLayout, act);
+//	}
+//	{
+//		auto act = page->action(QWebPage::ToggleStrikethrough);
+//		act->setIcon(QIcon(":/ico/strikethrough"));
+//		act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+//		app->addToolButton(this, ui.toolBoxLayout, act);
+//	}
+//	app->addToolBoxSpacer(ui.toolBoxLayout);
+//	{
+//		auto act = page->action(QWebPage::ToggleSuperscript);
+//		act->setIcon(QIcon(":/ico/superscript"));
+//		app->addToolButton(this, ui.toolBoxLayout, act);
+//	}
+//	{
+//		auto act = page->action(QWebPage::ToggleSubscript);
+//		act->setIcon(QIcon(":/ico/subscript"));
+//		app->addToolButton(this, ui.toolBoxLayout, act);
+//	}
+
 	{
 		auto act = new QAction(this);
 		act->setIcon(QIcon(":/ico/preformatted"));
@@ -110,13 +85,13 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			txt.replace("\'","\\'");
 			txt.prepend("<pre>");
 			txt.append("</pre>");
-			auto frame = ui.noteEdit->page()->mainFrame();
-			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
+			auto page = ui.noteEdit->page();
+			page->runJavaScript("document.execCommand('delete',false,'');");
 			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
-			frame->evaluateJavaScript(js);
+			page->runJavaScript(js);
 		});
 		act->setEnabled(false);
-		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+		connect(ui.noteEdit, &QWebEngineView::selectionChanged, [=](){
 			if (ui.noteEdit->selectedText().isEmpty())
 				act->setEnabled(false);
 			else
@@ -142,13 +117,13 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			txt.replace("\n","\\n");
 			txt.replace("\r","\\r");
 			txt.replace("\'","\\'");
-			auto frame = ui.noteEdit->page()->mainFrame();
-			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
+			auto page = ui.noteEdit->page();
+			page->runJavaScript("document.execCommand('delete',false,'');");
 			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
-			frame->evaluateJavaScript(js);
+			page->runJavaScript(js);
 		});
 		act->setEnabled(false);
-		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+		connect(ui.noteEdit, &QWebEngineView::selectionChanged, [=](){
 			if (ui.noteEdit->selectedText().isEmpty())
 				act->setEnabled(false);
 			else
@@ -156,61 +131,61 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 		app->addToolButton(this, ui.toolBoxLayout, act);
 	}
-	{
-		auto act = new QAction(this);
-		act->setIcon(QIcon(":/ico/remove style"));
-		act->setToolTip(tr("Remove colors or formatting"));
-		QMenu *menu = new QMenu(this);
-		auto remStyles = menu->addAction(tr("remove styles (colors)"));
-		auto remFormat = menu->addAction(tr("to plain text"));
-		connect(remStyles, &QAction::triggered, [=]{
-			QString html = ui.noteEdit->selectedHtml();
-			QString newHtml;
-			QRegExp reg("<[^>]+(style\\s*=\\s*\"[^\"]*\")");
-			int from = 0;
-			int to;
-			int pos = 0;
-			while (true){
-				pos = reg.indexIn(html, pos);
-				if (pos < 0)
-					break;
-				//qDebug()<< reg.cap(0);
-				//qDebug()<< reg.cap(1);
-				pos += reg.cap(0).size();
-				auto cap = reg.cap(1);
-				to = reg.pos(1);
-				newHtml += html.midRef(from, to - from);
-				from = to + cap.size();
-			}
-			newHtml += html.midRef(from, html.size());
-			newHtml.replace("\n","\\n");
-			newHtml.replace("\r","\\r");
-			newHtml.replace("\'","\\'");
-			auto frame = ui.noteEdit->page()->mainFrame();
-			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
-			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(newHtml);
-			frame->evaluateJavaScript(js);
-		});
-		connect(remFormat, &QAction::triggered, [=]{
-			QString txt = ui.noteEdit->selectedText();
-			txt.replace("\n","<br>");
-			txt.replace("\r","<br>");
-			txt.replace("\'","\\'");
-			auto frame = ui.noteEdit->page()->mainFrame();
-			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
-			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
-			frame->evaluateJavaScript(js);
-		});
-		act->setMenu(menu);
-		act->setEnabled(false);
-		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
-			if (ui.noteEdit->selectedText().isEmpty())
-				act->setEnabled(false);
-			else
-				act->setEnabled(true);
-		});
-		app->addToolButton(this, ui.toolBoxLayout, act);
-	}
+//	{
+//		auto act = new QAction(this);
+//		act->setIcon(QIcon(":/ico/remove style"));
+//		act->setToolTip(tr("Remove colors or formatting"));
+//		QMenu *menu = new QMenu(this);
+//		auto remStyles = menu->addAction(tr("remove styles (colors)"));
+//		auto remFormat = menu->addAction(tr("to plain text"));
+//		connect(remStyles, &QAction::triggered, [=]{
+//			QString html = ui.noteEdit->selectedHtml();
+//			QString newHtml;
+//			QRegExp reg("<[^>]+(style\\s*=\\s*\"[^\"]*\")");
+//			int from = 0;
+//			int to;
+//			int pos = 0;
+//			while (true){
+//				pos = reg.indexIn(html, pos);
+//				if (pos < 0)
+//					break;
+//				//qDebug()<< reg.cap(0);
+//				//qDebug()<< reg.cap(1);
+//				pos += reg.cap(0).size();
+//				auto cap = reg.cap(1);
+//				to = reg.pos(1);
+//				newHtml += html.midRef(from, to - from);
+//				from = to + cap.size();
+//			}
+//			newHtml += html.midRef(from, html.size());
+//			newHtml.replace("\n","\\n");
+//			newHtml.replace("\r","\\r");
+//			newHtml.replace("\'","\\'");
+//			auto frame = ui.noteEdit->page()->mainFrame();
+//			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
+//			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(newHtml);
+//			frame->evaluateJavaScript(js);
+//		});
+//		connect(remFormat, &QAction::triggered, [=]{
+//			QString txt = ui.noteEdit->selectedText();
+//			txt.replace("\n","<br>");
+//			txt.replace("\r","<br>");
+//			txt.replace("\'","\\'");
+//			auto frame = ui.noteEdit->page()->mainFrame();
+//			frame->evaluateJavaScript("document.execCommand('delete',false,'');");
+//			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(txt);
+//			frame->evaluateJavaScript(js);
+//		});
+//		act->setMenu(menu);
+//		act->setEnabled(false);
+//		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+//			if (ui.noteEdit->selectedText().isEmpty())
+//				act->setEnabled(false);
+//			else
+//				act->setEnabled(true);
+//		});
+//		app->addToolButton(this, ui.toolBoxLayout, act);
+//	}
 	ui.toolBoxLayout->addStretch();
 	{
 		QAction *search = new QAction(this);
@@ -252,49 +227,6 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	stopNoteTracking();
 }
 
-bool NoteEditor::eventFilter(QObject *watched, QEvent *event)
-{
-	if (event->type() != QEvent::MouseButtonPress)
-		return false;
-	QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
-	QWebView *view = static_cast<QWebView*>(watched);
-	QPoint pos = view->mapFromGlobal(mouseEvent->globalPos());
-	QWebFrame *frame = view->page()->frameAt(mouseEvent->pos());
-	if (!frame)
-		return false;
-	QWebHitTestResult hitTestResult = frame->hitTestContent(pos);
-	currentEl_ = hitTestResult.element();
-	currentSelectionChanged();
-	return false;
-}
-
-void NoteEditor::currentSelectionChanged()
-{
-	uncheckHeaders();
-	QString tag = currentEl_.tagName();
-	if ( tag.size() == 2 && tag.startsWith("H") ){
-		tag.remove(0,1);
-		bool ok;
-		auto hn = tag.toUInt(&ok);
-		if (!ok)
-			return;
-		hn--;
-		for (size_t i = 0; i < headers_.size(); i++){
-			if ( hn == i ){
-				header_->setChecked(true);
-				headers_[i]->setChecked(true);
-			}
-		}
-	}
-}
-
-void NoteEditor::uncheckHeaders()
-{
-	header_->setChecked(false);
-	for (auto a : headers_)
-		a->setChecked(false);
-}
-
 void NoteEditor::highlightFoundText()
 {
 	QString txt = ui.searchFor->text();
@@ -302,17 +234,20 @@ void NoteEditor::highlightFoundText()
 		unHighlightFoundText();
 		return;
 	}
-	ui.noteEdit->findText("", QWebPage::HighlightAllOccurrences);
-	bool found = ui.noteEdit->findText(txt, QWebPage::HighlightAllOccurrences);
-	if (!found)
-		ui.noteEdit->setGraphicsEffect(new QGraphicsBlurEffect());
-	else
-		ui.noteEdit->setGraphicsEffect(nullptr);
+	// TODO: have to highlight all occurences, but WebEngine supports only finding forward
+	//ui.noteEdit->findText("", QWebPage::HighlightAllOccurrences);
+	ui.noteEdit->findText("");
+	ui.noteEdit->findText(txt, QWebEnginePage::FindFlags(),[=](bool found){
+		if (!found)
+			ui.noteEdit->setGraphicsEffect(new QGraphicsBlurEffect());
+		else
+			ui.noteEdit->setGraphicsEffect(nullptr);
+	});
 }
 
 void NoteEditor::unHighlightFoundText()
 {
-	ui.noteEdit->findText("", QWebPage::HighlightAllOccurrences);
+	ui.noteEdit->findText("");
 	ui.noteEdit->setGraphicsEffect(nullptr);
 }
 
@@ -341,8 +276,6 @@ void NoteEditor::noteText(const QString &txt, const QString &basePath)
 	if (txt.isEmpty())
 		html = GetResourceString(":/default-note.html");
 	ui.noteEdit->setHtml(html, QUrl::fromLocalFile(basePath + "/"));
-	if (!ui.searchPanel->isHidden())
-		highlightFoundText();
 	connectionsToNote_.push_back(connect(ui.noteEdit->page(), &QWebPage::contentsChanged, this, &NoteEditor::changed));
 }
 
@@ -353,7 +286,6 @@ void NoteEditor::stopNoteTracking()
 	for (auto &c : connectionsToNote_)
 		disconnect(c);
 	ui.noteEdit->setHtml(QString());
-	uncheckHeaders();
 	this->setEnabled(false);
 }
 

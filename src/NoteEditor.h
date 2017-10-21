@@ -29,13 +29,6 @@ private:
 	QTimer autosaveTimer_;
 	bool   haveToSave_ = false;
 
-	QWebElement currentEl_;
-	void currentSelectionChanged();
-
-	QAction *header_;
-	std::vector<QAction*> headers_;
-	void uncheckHeaders();
-
 	void highlightFoundText();
 	void unHighlightFoundText();
 };

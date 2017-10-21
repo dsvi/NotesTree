@@ -16,7 +16,7 @@ icons.path = /usr/share/pixmaps
 icons.files = NotesTree.svg
 INSTALLS += icons
 
-QT += widgets webkitwidgets network svg
+QT += widgets webenginewidgets network svg
 CONFIG += precompile_header
 CONFIG += c++14
 
@@ -75,6 +75,9 @@ FORMS    += src/MainWindow.ui \
     src/AddNewNoteDialog.ui \
     src/NoteEditor.ui \
     src/NotesTree.ui
+
+DISTFILES += \
+    res/css
 
 
 

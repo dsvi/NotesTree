@@ -17,7 +17,7 @@
 #include <QtDebug>
 #include <QtGui>
 #include <QToolButton>
-#include <QtWebKitWidgets>
+#include <QtWebEngineWidgets/QtWebEngineWidgets>
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem.hpp>
@@ -54,9 +54,9 @@ struct hash<class QString>{
 }
 
 #ifdef DEBUG
-	#define ASSERT(x) Q_ASSERT(x)
+  #define ASSERT(x) Q_ASSERT(x)
 #else
-	#define ASSERT(x)
+  #define ASSERT(x)
 #endif
 
 // defines non const this. use 'mut_this->...'

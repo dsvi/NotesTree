@@ -3,6 +3,7 @@
         <file>68.png</file>
         <file>loading-note.html</file>
         <file>default-note.html</file>
+        <file>css</file>
     </qresource>
     <qresource prefix="/ico">
         <file alias="bold">ico/bold.svg</file>

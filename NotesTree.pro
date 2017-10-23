@@ -12,7 +12,7 @@ INSTALLS += target
 desktop.path = /usr/share/applications
 desktop.files = NotesTree.desktop
 INSTALLS += desktop
-icons.path = /usr/share/pixmaps
+icons.path = /usr/share/icons/hicolor/scalable/apps
 icons.files = NotesTree.svg
 INSTALLS += icons
 

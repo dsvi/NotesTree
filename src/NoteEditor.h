@@ -21,8 +21,6 @@ public slots:
 	void save();
 
 	void changed();
-protected:
-	bool eventFilter(QObject * watched, QEvent * event);
 private:
 	Ui::NoteEditor ui;
 	std::vector<QMetaObject::Connection> connectionsToNote_;
@@ -30,11 +28,6 @@ private:
 	bool   haveToSave_ = false;
 
 	QWebElement currentEl_;
-	void currentSelectionChanged();
-
-	QAction *header_;
-	std::vector<QAction*> headers_;
-	void uncheckHeaders();
 
 	void highlightFoundText();
 	void unHighlightFoundText();

@@ -1,0 +1,10 @@
+function addStyleString(str) {
+    var node = document.createElement('style');
+    node.innerHTML = str;
+    document.body.appendChild(node);
+}
+
+addStyleString('body { color: %1 }');
+//addStyleString('body { background: silver }');
+addStyleString('a:link { color: %2 }');
+addStyleString('a:visited { color: %3 }');

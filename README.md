@@ -12,6 +12,7 @@ What makes it different?
 
 # Getting it
 You can get the fresh Appimage [from the downloads section](https://bitbucket.org/baltic/notestree/downloads/Notes_Tree-x86_64.AppImage).
+
 ...or build it yourself. For ubuntu you'll need libboost-filesystem-dev, qt5-default, libqt5webkit5-dev, libqt5svg5-dev installed.
 then do:
 ```

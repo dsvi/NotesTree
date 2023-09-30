@@ -1,3 +1,10 @@
+# Moved [to gitlab](https://gitlab.com/44100Hz/NotesTree)
+\
+\
+\
+\
+\
+.
 # About
 
 NotesTree is a note taking app, which organizes notes in a hierarchical (tree like) structure.

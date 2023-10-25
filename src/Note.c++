@@ -1,7 +1,7 @@
 #include "Note.h"
 
 using namespace std;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 
 const char Note::delimChar;
 
@@ -20,7 +20,7 @@ bool Note::hasAttach()
 	return false;
 }
 
-QString Note::decodeFromFilename(const boost::filesystem::path &filename)
+QString Note::decodeFromFilename(const std::filesystem::path &filename)
 {
 	QString ret;
 	QString fn(filename.c_str());
@@ -50,7 +50,7 @@ QString Note::decodeFromFilename(const boost::filesystem::path &filename)
 	return ret;
 }
 
-boost::filesystem::path Note::encodeToFilename(const QString &name)
+std::filesystem::path Note::encodeToFilename(const QString &name)
 {
 	QString ret;
 	ret.reserve(name.size());
@@ -69,22 +69,43 @@ boost::filesystem::path Note::encodeToFilename(const QString &name)
 			ret += c;
 		}
 	}
-	return path(ret.toUtf8());
+	return path(ret.toUtf8().constBegin());
 }
 
-void Note::addFromSubnotesDir(const boost::filesystem::path &path)
+void Note::addFromSubnotesDir(const std::filesystem::path &path)
 {
 	if (name_.isNull())
 		name_ = decodeFromFilename(path.filename());
-	std::unordered_map<QString, directory_entry> dirs;
+//	for (auto& fi : directory_iterator(path)){
+//		if (fi.is_directory()){
+//			auto ext = fi.path().extension();
+//			if (ext == attachExt or ext == embedExt)
+//				continue;			
+//		}
+//		QString name = fi.path().filename().c_str();
+//		if (!name.endsWith(Note::textExt))
+//			continue;
+//		auto subNote = make_shared<Note>();
+//		subNote->createFromNoteTextFile(fi.path());
+//		addNote(subNote);
+//		class path subDir = subNote->subNotesDir();
+//		if (exists(subDir))
+//			subNote->addFromSubnotesDir(subDir);
+//		dirs.erase(toQS(encodeToFilename(subNote->name_)));
+//		dirs.erase(toQS(encodeToFilename(subNote->name_ + attachExt)));
+//		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
+//	}
+	
+	std::unordered_map<QString, class path> dirs;
 	for (auto&& x : directory_iterator(path))
-		if (x.status().type() == file_type::directory_file && x.path().filename().native()[0] != '.')
+		// TODO: check for . and .. not needed anymore?
+		if (x.status().type() == file_type::directory && x.path().filename().native()[0] != '.')
 			dirs.insert({x.path().filename().c_str(), x});
-	for (directory_entry& fi : directory_iterator(path)){
-		if (fi.status().type() == file_type::directory_file)
+	for (auto& fi : directory_iterator(path)){
+		if (fi.is_directory())
 			continue;
-		QString name = fi.path().filename().c_str();
-		if (!name.endsWith(Note::textExt))
+		auto ext = fi.path().extension();
+		if (ext != Note::textExt)
 			continue;
 		auto subNote = make_shared<Note>();
 		subNote->createFromNoteTextFile(fi.path());
@@ -97,11 +118,9 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
 	}
 	for (auto dir = dirs.begin(); dir != dirs.end(); ){
-		const boost::filesystem::path &dirPath = dir->second.path();
-		if (
-			toQS(dirPath.filename()).endsWith(attachExt) ||
-			toQS(dirPath.filename()).endsWith(embedExt)
-		){
+		const class path &dirPath = dir->second;
+		auto ext = dirPath.extension();
+		if (ext == attachExt or ext == embedExt){
 			++dir;
 			continue;
 		}
@@ -116,7 +135,7 @@ void Note::addFromSubnotesDir(const boost::filesystem::path &path)
 	// just in case we happened to have a note name ending on attachExt etc
 	// kinda stupid part
 	for (auto &dir : dirs){
-		const boost::filesystem::path &dirPath = dir.second.path();
+		const std::filesystem::path &dirPath = dir.second;
 		auto subNote = make_shared<Note>();
 		subNote->name_ = decodeFromFilename(dirPath.filename());
 		addNote(subNote);
@@ -150,7 +169,7 @@ void Note::createHierarchyFromRoot(const path &p)
 	}
 }
 
-void Note::move(const boost::filesystem::path &newPath, const boost::filesystem::path &newFileName)
+void Note::move(const std::filesystem::path &newPath, const std::filesystem::path &newFileName)
 {
 	ASSERT(is_directory(newPath));
 	auto ren = [&](const path &oldPath, const char *ext){
@@ -184,13 +203,13 @@ void Note::cleanUpFileSystem()
 	auto textFile = textPathname();
 	auto attach = attachDir();
 	auto embed = embedDir();
-	if (exists(subDir) && boost::filesystem::is_empty(subDir) && exists(textFile))
+	if (exists(subDir) && filesystem::is_empty(subDir) && exists(textFile))
 		remove(subDir);
-	if (exists(textFile) && boost::filesystem::is_empty(textFile) && exists(subDir))
+	if (exists(textFile) && filesystem::is_empty(textFile) && exists(subDir))
 		remove(textFile);
-	if (exists(attach) && boost::filesystem::is_empty(attach))
+	if (exists(attach) && filesystem::is_empty(attach))
 		remove(attach);
-	if (exists(embed) && boost::filesystem::is_empty(embed))
+	if (exists(embed) && filesystem::is_empty(embed))
 		remove(embed);
 }
 
@@ -310,7 +329,7 @@ void Note::createSubnote(const QString &name)
 		if (exists(txtPath))
 			throw RecoverableException(
 				tr("Filename '%1' already exist.\n").arg(QString::fromStdWString(txtPath.wstring())));
-		boost::filesystem::fstream out(
+		std::fstream out(
 			subNote->textPathname(), ios_base::out | ios_base::binary);
 		addNote(subNote);
 		cleanUpFileSystem();
@@ -346,6 +365,7 @@ void Note::deleteSelfRecursively()
 		remove_all(subNotesDir());
 		remove_all(attachDir());
 		remove_all(embedDir());
+		//TODO: fsync
 		remove(textPathname());
 		removeFromParent();
 		parent_->cleanUpFileSystem();
@@ -353,6 +373,23 @@ void Note::deleteSelfRecursively()
 	catch(...){
 		throw Exception(tr("Can't delete note '%1':").arg(name_));
 	}
+}
+
+static
+fstream createInStream(path &inFilename){  
+	using io = std::ios_base;
+	fstream in(inFilename, io::in | io::binary);
+	in.exceptions(io::failbit | io::badbit);
+	return in;
+}
+
+static 
+fstream createOutStream(std::filesystem::path outFilename)
+{
+	using io = std::ios_base;
+	fstream out(outFilename, io::out | io::trunc | io::binary);
+	out.exceptions(io::failbit | io::badbit);
+	return out;
 }
 
 static const char * UrlRegexps[3] = {
@@ -404,19 +441,19 @@ set<QString> grabUrlsOfEmbeddedFiles(const QString &html)
 	return srcs;
 }
 
-path Note::generateEmbedFilename(const boost::filesystem::path &hint)
+path Note::generateEmbedFilename(const std::filesystem::path &hint)
 {
 	auto emDir = embedDir();
 	if (!exists(emDir))
 		create_directory(emDir);
 	auto simpleCase = emDir/hint.filename();
-	if (simpleCase.string().size() < 100 && !exists(simpleCase))
+	if (utf8len(hint.string()) < 100 && !exists(simpleCase))
 		return simpleCase;
 	path ext = hint.extension();
 	path pref = hint.stem();
-	if (pref.size() > 100)
+	if (utf8len(pref.string()) > 100)
 		pref = path("");
-	if (ext.size() > 100)
+	if (utf8len(ext.string()) > 10)
 		ext = path("");
 	ui32 id = 0;
 	path retFilename;
@@ -448,9 +485,7 @@ void Note::downloaded(const QString &originalUrl, const QByteArray &content, con
 		QString embedUrl;
 		{
 			path embed = generateEmbedFilename(toPath(QUrl::fromPercentEncoding(originalUrl.toUtf8())));
-			using io = std::ios_base;
-			boost::filesystem::fstream out(embed, io::out | io::trunc | io::binary);
-			out.exceptions(io::failbit | io::badbit);
+			fstream out = createOutStream(embed);
 			out.write(content.data(), content.size());
 			out.close();
 			embedUrl = urlEnc("./" + toQS(embed.parent_path().filename() / embed.filename()));
@@ -475,13 +510,11 @@ QString Note::applyPatch(const QString &html)
 
 void Note::saveTxt(const QString &txt)
 {
-	boost::filesystem::path outFilename;
+	std::filesystem::path outFilename;
 	try{
 		outFilename = textPathname();
 		outFilename += newFileExt;
-		using io = std::ios_base;
-		boost::filesystem::fstream out(outFilename, io::out | io::trunc | io::binary);
-		out.exceptions(io::failbit | io::badbit);
+		fstream out = createOutStream(outFilename);
 		auto utf8txt = txt.toUtf8();
 		out.write(utf8txt.data(), utf8txt.size());
 		out.close();
@@ -499,9 +532,7 @@ QString Note::loadTxt()
 		if (!exists(inFilename))
 			return QString();
 
-		using io = std::ios_base;
-		boost::filesystem::fstream in(inFilename, io::in | io::binary);
-		in.exceptions(io::failbit | io::badbit);
+		fstream in =createInStream(inFilename);
 		auto inSize = file_size(inFilename);
 		if (inSize == static_cast<uintmax_t>(-1))
 			throw RecoverableException(
@@ -544,10 +575,7 @@ void Note::save(QString html)
 				url = QUrl::fromPercentEncoding(url.toUtf8());
 				auto srcPath = toPath(url);
 				path dstPath = generateEmbedFilename(srcPath);
-				boost::system::error_code err;
-				create_hard_link(srcPath, dstPath, err);
-				if (err)
-					copy_file(srcPath,dstPath);
+				copy_file(srcPath,dstPath);
 				validEmbeds.insert(dstPath.filename());
 				auto dstUrl = urlEnc("./" + toQS(dstPath.parent_path().filename() / dstPath.filename()));
 				urlsPatch_[u] = dstUrl;
@@ -639,10 +667,10 @@ path Note::pathToNote() const
 	if (parent_)
 		return parent_->subNotesDir();
 	else
-		return path(name_.toUtf8());
+		return path(name_.toUtf8().constData());
 }
 
-boost::filesystem::path Note::attachDir() const
+std::filesystem::path Note::attachDir() const
 {
 	ASSERT(parent_ != nullptr); // root has no attach
 	return pathToNote() / encodeToFilename(name_+attachExt);
@@ -654,14 +682,14 @@ path Note::embedDir() const
 	return pathToNote() / encodeToFilename(name_+embedExt);
 }
 
-boost::filesystem::path Note::subNotesDir() const
+std::filesystem::path Note::subNotesDir() const
 {
 	if (parent_ == nullptr)
 		return pathToNote();
 	return pathToNote() / encodeToFilename(name_);
 }
 
-boost::filesystem::path Note::textPathname() const
+std::filesystem::path Note::textPathname() const
 {
 	ASSERT(parent_ != nullptr); // root has no text
 	return pathToNote() / encodeToFilename(name_+textExt);

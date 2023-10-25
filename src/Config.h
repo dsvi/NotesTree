@@ -7,7 +7,7 @@ class Config : public QObject
 	Q_OBJECT
 public:
 	explicit Config(QObject *parent = 0);
-	boost::filesystem::path root();
+	std::filesystem::path root();
 	void emitRootChanged();
 
 	using ptree = boost::property_tree::ptree;
@@ -16,16 +16,16 @@ public:
 
 
 signals:
-	void rootChanged(const boost::filesystem::path &path);
+	void rootChanged(const std::filesystem::path &path);
 public slots:
 
 private:
-	boost::filesystem::path rootPath_;
+	std::filesystem::path rootPath_;
 
 };
 
 inline
-boost::filesystem::path Config::root()
+std::filesystem::path Config::root()
 {
 	return rootPath_;
 }
@@ -35,7 +35,7 @@ void Config::emitRootChanged()
 	emit rootChanged(rootPath_);
 }
 
-Q_DECLARE_METATYPE(boost::filesystem::path)
+Q_DECLARE_METATYPE(std::filesystem::path)
 
 template <typename Ch, typename Traits>
 std::basic_ostream<Ch, Traits>&	operator << (std::basic_ostream<Ch, Traits>&s, const QByteArray &ba){

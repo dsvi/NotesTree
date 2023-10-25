@@ -99,7 +99,7 @@ public slots:
 private:
 	std::unique_ptr<NoteInTree> root_;
 	Note      *rootNote_;
-	QString mimeType_ = "application/x.treenote-note";
+	QString mimeType_ = "application/x.notes-tree";
 
 	friend class NoteInTree;
 };

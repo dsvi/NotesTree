@@ -1,11 +1,12 @@
 #include "Config.h"
 
-using namespace boost::filesystem;
+using namespace std::filesystem;
 using namespace boost::property_tree;
 
 Config::Config(QObject *parent) : QObject(parent)
 {
-	qRegisterMetaType<boost::filesystem::path>();
+	qRegisterMetaType<std::filesystem::path>();
+// TODO: get rid
 #ifdef __DEBUG
 	rootPath_ = toPath(QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first());
 	rootPath_ /= "OTest";

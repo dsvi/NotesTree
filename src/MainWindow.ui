@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>TreeNote</string>
+   <string>Notes Tree</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">

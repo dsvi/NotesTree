@@ -54,7 +54,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	{
 		auto act = page->action(QWebPage::ToggleStrikethrough);
 		act->setIcon(QIcon(":/ico/strikethrough"));
-		act->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+		act->setShortcut(QKeySequence(+Qt::CTRL + +Qt::Key_S));
 		app->addToolButton(this, ui.toolBoxLayout, act);
 	}
 	app->addToolBoxSpacer(ui.toolBoxLayout);

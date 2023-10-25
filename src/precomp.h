@@ -1,6 +1,9 @@
 #ifndef PRECOMP_H
 #define PRECOMP_H
 
+// TODO: remove
+#define _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
+
 #include <QAbstractItemView>
 #include <QAction>
 #include <QApplication>
@@ -19,9 +22,6 @@
 #include <QToolButton>
 #include <QtWebKitWidgets>
 
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/optional.hpp>
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -41,17 +41,6 @@
 
 #include "App.h"
 #include "Exceptions.h"
-
-
-namespace std{
-template<>
-struct hash<class QString>{
-	size_t operator()(const QString &s) const
-	{
-		return qHash(s);
-	}
-};
-}
 
 #ifdef DEBUG
 	#define ASSERT(x) Q_ASSERT(x)
@@ -81,13 +70,22 @@ typedef uint32_t                 ui32;
 typedef uint64_t                 ui64;
 
 inline
-QString toQS(const boost::filesystem::path &p){
-	return QString::fromStdWString(p.wstring());
+QString toQS(const std::filesystem::path &p){
+	return QString::fromStdString(p.string());
 }
 
 inline
-boost::filesystem::path toPath(const QString &p){
-	return boost::filesystem::path(p.toUtf8());
+std::filesystem::path toPath(const QString &p){
+	return std::filesystem::path(p.toUtf8().constBegin());
+}
+
+inline
+size_t utf8len(std::string_view str){
+	size_t len = 0;
+	for (unsigned char c : str)
+		if ((c & 0xC0) != 0x80)
+			len++;
+	return len;
 }
 
 #endif // PRECOMP_H

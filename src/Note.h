@@ -25,7 +25,7 @@ public slots:
 	/// create hierarchy of notes and subnotes from the root folder
 	/// this note becames root of the hierarchy
 	/// also does filesystem cleanups. (removes empty attach folders etc)
-	void createHierarchyFromRoot(const boost::filesystem::path &path);
+	void createHierarchyFromRoot(const std::filesystem::path &path);
 	void changeName(const QString &name);
 
 	/// adds the notes as child to this, removes it from prev parent.
@@ -61,11 +61,11 @@ private:
 	std::set<QString>                  urlsInDownload_;
 
 	/// populate list of subnotes and the name from the @path dir
-	void addFromSubnotesDir(const boost::filesystem::path &path);
+	void addFromSubnotesDir(const std::filesystem::path &path);
 	/// pathname should end on textExt
-	void createFromNoteTextFile(const boost::filesystem::path &textPathname);
+	void createFromNoteTextFile(const std::filesystem::path &textPathname);
 
-	void move(const boost::filesystem::path &newPath, const boost::filesystem::path &newFileName);
+	void move(const std::filesystem::path &newPath, const std::filesystem::path &newFileName);
 	void adopt_(const std::shared_ptr<Note> &n);
 	void cleanUpFileSystem();
 	void ensureSubDirExist();
@@ -77,18 +77,18 @@ private:
 	/// returns the full path in hierarchy to this note, not including its name.
 	/// or empty string, if the parent() of this note is nullptr
 	/// example "notename1⮕notename2⮕notename3"
-	QString makePathName(const QString separator = u8"⮕") const;
+	QString makePathName(const QString separator = "⮕") const;
 	/// returns number of parent nodes to this one. including root
 	int hierarchyDepth() const;
 
 	/// add the file as attached to the note
 	//void attach(const QFileInfo &fi);
 
-	boost::filesystem::path pathToNote() const;
-	boost::filesystem::path attachDir() const;
-	boost::filesystem::path embedDir() const;
-	boost::filesystem::path subNotesDir() const;
-	boost::filesystem::path textPathname() const;
+	std::filesystem::path pathToNote() const;
+	std::filesystem::path attachDir() const;
+	std::filesystem::path embedDir() const;
+	std::filesystem::path subNotesDir() const;
+	std::filesystem::path textPathname() const;
 
 	void warning(QString &&msg);
 	void error(QString &&msg);
@@ -104,7 +104,7 @@ private:
 	void deleteSelfRecursively();
 
 	/// also creates embed dir, if it did not exist
-	boost::filesystem::path generateEmbedFilename(const boost::filesystem::path &hint);
+	std::filesystem::path generateEmbedFilename(const std::filesystem::path &hint);
 	void downloaded(const QString &originalUrl, const QByteArray &content, const QString &error);
 
 	QString loadTxt();
@@ -113,19 +113,19 @@ private:
 	QString applyPatch(const QString &html);
 
 	static
-	QString decodeFromFilename(const boost::filesystem::path& fn);
+	QString decodeFromFilename(const std::filesystem::path& fn);
 	static
-	boost::filesystem::path encodeToFilename(const QString& name);
+	std::filesystem::path encodeToFilename(const QString& name);
 	constexpr	static
-	const char *textExt = u8".html";
+	const char *textExt = ".html";
 	static constexpr
 	const char delimChar = 1;
 	constexpr	static
-	const char *attachExt = u8".attach";
+	const char *attachExt = ".attach";
 	constexpr	static
-	const char *embedExt = u8".embed";  // files embedded in note html (images etc)
+	const char *embedExt = ".embed";  // files embedded in note html (images etc)
 	constexpr	static
-	const char *newFileExt = u8".new";
+	const char *newFileExt = ".new";
 };
 
 Q_DECLARE_METATYPE(std::weak_ptr<Note>)

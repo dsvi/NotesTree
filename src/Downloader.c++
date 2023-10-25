@@ -2,7 +2,7 @@
 
 Downloader::Downloader(QObject *parent) : QObject(parent)
 {
-	connect(&downloader_, &QNetworkAccessManager::finished, this, [=](QNetworkReply *reply){
+	connect(&downloader_, &QNetworkAccessManager::finished, this, [=, this](QNetworkReply *reply){
 		downloadFinished(reply);
 	});
 }

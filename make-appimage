@@ -1,5 +1,16 @@
 #!/bin/sh
 
+# for ubuntu install: qt5-default libqt5webkit5-dev //libqt5svg5-dev// libboost-filesystem-dev
+
+set -e
+# Any subsequent commands which fail will cause the shell script to exit immediately
+
+
+# build
+qmake
+make -j $(nproc)
+sudo make install
+# create AppImage
 mkdir -p appimage/usr/bin
 mkdir -p appimage/usr/share/applications
 mkdir -p appimage/usr/share/icons/hicolor/scalable/apps

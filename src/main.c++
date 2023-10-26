@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
 	qInstallMessageHandler(MessageOutput);
 #endif
+	QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 	QApplication a(argc, argv);
 	a.setApplicationName("NotesTree");
 	app = new App(&a);

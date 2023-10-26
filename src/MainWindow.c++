@@ -23,14 +23,15 @@ MainWindow::MainWindow(QWidget *parent) :
 	app->cfg()->emitRootChanged();
 
 	try {
-		auto pt = app->cfg()->laodUnimportantConfig();
-		auto w  = pt.get_optional<int>("MainWindow.width");
-		auto h  = pt.get_optional<int>("MainWindow.height");
-		if (w && h)
-			resize(*w, *h);
-		auto state  = pt.get_optional<QByteArray>("MainWindow.splitterState");
-		if (state)
-			ui->splitter->restoreState(*state);
+		auto settings = app->cfg()->unimportant_settings();
+		const auto geometry = settings.value("MainWindow.geometry", QByteArray()).toByteArray();
+		if (geometry.isEmpty())
+			setGeometry(100, 100, 800, 800);
+		else
+			restoreGeometry(geometry);
+		auto state  = settings.value("MainWindow.splitterState", QByteArray());
+		if (state.isValid())
+			ui->splitter->restoreState(state.toByteArray());
 	}
 	catch(...){
 		qCritical() << app->errorMessage(std::current_exception(), tr("Can't load config file."));
@@ -46,12 +47,10 @@ void MainWindow::closeEvent(QCloseEvent *ev)
 {
 	ui->noteEditor->save();
 	try{
-		Config::ptree pt = app->cfg()->laodUnimportantConfig();
-		auto sz = size();
-		pt.put("MainWindow.width", sz.width());
-		pt.put("MainWindow.height", sz.height());
-		pt.put("MainWindow.splitterState", ui->splitter->saveState());
-		app->cfg()->saveUnimportantConfig(pt);
+		auto settings = app->cfg()->unimportant_settings();
+		settings.setValue("MainWindow.geometry", saveGeometry());
+		settings.setValue("MainWindow.splitterState", ui->splitter->saveState());
+		settings.sync();
 	}
 	catch(...){
 		qCritical() << app->errorMessage(std::current_exception(), tr("Can't save config file."));

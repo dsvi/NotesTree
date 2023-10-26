@@ -1,9 +1,6 @@
 #ifndef PRECOMP_H
 #define PRECOMP_H
 
-// TODO: remove
-#define _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
-
 #include <QAbstractItemView>
 #include <QAction>
 #include <QApplication>
@@ -16,18 +13,17 @@
 #include <QNetworkRequest>
 #include <QStandardPaths>
 #include <QStringBuilder>
+#include <QToolButton>
 #include <QtCore>
 #include <QtDebug>
 #include <QtGui>
-#include <QToolButton>
 #include <QtWebKitWidgets>
-
-#include <boost/property_tree/info_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 
 #include <atomic>
 #include <cstring>
 #include <exception>
+#include <filesystem>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <memory>

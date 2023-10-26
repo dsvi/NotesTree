@@ -9,7 +9,7 @@ App::App(QObject *parent) : QObject(parent)
 	connect(this, &App::error, this, &App::errorSlot);
 	connect(this, &App::reportError, this, &App::showErrorDilogSlot);
 	connect(this, &App::reportErrorMsg, this, &App::errorMsgSlot);
-
+	
 	ioThread_.setObjectName("io thread");
 	connect(qApp, &QCoreApplication::aboutToQuit, [&](){
 		ioThread_.quit();
@@ -18,31 +18,21 @@ App::App(QObject *parent) : QObject(parent)
 	ioThread_.start();
 
 	downloader_.moveToThread(&ioThread_);
-
-	//auto screen = QGuiApplication::primaryScreen();
-	//hmm_ = screen->physicalDotsPerInchX() / 25.4;
-	//vmm_ = screen->physicalDotsPerInchY() / 25.4;
 }
 
 void App::addToolButton(QWidget *parent, QBoxLayout *l, QAction *a)
 {
 	auto b = new QToolButton(parent);
 	b->setAutoRaise(true);
-	//float w = 4*hmm_;
-	//float h = 4*hmm_;
 	b->setDefaultAction(a);
-	//b->setIconSize(QSize(w, h));
 	if (a->menu()){
 		b->setPopupMode(QToolButton::InstantPopup);
-		//w += 2.5f*hmm_;
 	}
-	//b->setFixedSize(QSize(w, h));
 	l->addWidget(b);
 }
 
 void App::addToolBoxSpacer(QBoxLayout *l)
 {
-	//l->addSpacing(2 * hmm_);
 	l->addSpacing(2);
 }
 

@@ -7,7 +7,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif ()
 
-project(NotesTree VERSION 0.1 LANGUAGES CXX)
+project(NotesTree VERSION 1.2 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -33,9 +33,6 @@ install(CODE "set(CMAKE_INSTALL_LOCAL_ONLY true)")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets WebKitWidgets Network)
-add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
-set(Boost_USE_STATIC_LIBS   ON)
-find_package(Boost REQUIRED COMPONENTS filesystem)
 
 set(PROJECT_SOURCES
     src/precomp.h
@@ -95,7 +92,7 @@ else()
 endif()
 target_include_directories(NotesTree PRIVATE src)
 target_precompile_headers(NotesTree PRIVATE src/precomp.h)
-target_link_libraries(NotesTree PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::WebKitWidgets Qt${QT_VERSION_MAJOR}::Network Boost::filesystem)
+target_link_libraries(NotesTree PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::WebKitWidgets Qt${QT_VERSION_MAJOR}::Network)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

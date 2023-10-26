@@ -98,14 +98,14 @@ void NotesTree::root(Note *root)
 	{
 		ui.searchType->insertItem(NoteInTree::SearchType::WholePhrase, tr("whole phrase"));
 		ui.searchType->insertItem(NoteInTree::SearchType::AllTheWords, tr("all of the words"));
-		Config::ptree pt = app->cfg()->laodUnimportantConfig();
-		auto t = pt.get_optional<uint>("NotesTree.searchType");
-		if (t)
-			ui.searchType->setCurrentIndex(*t);
-		connect(qApp, &QCoreApplication::aboutToQuit, [=](){
-			Config::ptree pt = app->cfg()->laodUnimportantConfig();
-			pt.put("NotesTree.searchType", ui.searchType->currentIndex());
-			app->cfg()->saveUnimportantConfig(pt);
+		constexpr const char * settingsSearchType = "NotesTree.searchType";
+		auto settings = app->cfg()->unimportant_settings();
+		auto t = settings.value(settingsSearchType); 
+		if (t.isValid())
+			ui.searchType->setCurrentIndex(t.toInt());
+		connect(qApp, &QCoreApplication::aboutToQuit, [=, this](){
+			auto settings = app->cfg()->unimportant_settings();
+			settings.setValue(settingsSearchType, ui.searchType->currentIndex());
 		});
 	}
 	{

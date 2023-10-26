@@ -72,7 +72,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		auto act = new QAction(this);
 		act->setIcon(QIcon(":/ico/preformatted"));
 		act->setToolTip(tr("Monospaced preformatted text"));
-		connect(act, &QAction::triggered, [=]{
+		connect(act, &QAction::triggered, [=,this]{
 			QString txt = ui.noteEdit->selectedText();
 			txt.replace("\n","\\n");
 			txt.replace("\r","\\r");
@@ -85,7 +85,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			frame->evaluateJavaScript(js);
 		});
 		act->setEnabled(false);
-		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+		connect(ui.noteEdit, &QWebView::selectionChanged, [=,this](){
 			if (ui.noteEdit->selectedText().isEmpty())
 				act->setEnabled(false);
 			else
@@ -97,7 +97,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		auto act = new QAction(this);
 		act->setIcon(QIcon(":/ico/link"));
 		act->setToolTip(tr("Make link"));
-		connect(act, &QAction::triggered, [=]{
+		connect(act, &QAction::triggered, [=,this]{
 			QString txt = ui.noteEdit->selectedText();
 			QString suggest = txt.contains(" ") ? QString() : txt;
 			bool ok;
@@ -117,7 +117,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			frame->evaluateJavaScript(js);
 		});
 		act->setEnabled(false);
-		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+		connect(ui.noteEdit, &QWebView::selectionChanged, [=,this](){
 			if (ui.noteEdit->selectedText().isEmpty())
 				act->setEnabled(false);
 			else
@@ -132,7 +132,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		QMenu *menu = new QMenu(this);
 		auto remStyles = menu->addAction(tr("remove styles (colors)"));
 		auto remFormat = menu->addAction(tr("to plain text"));
-		connect(remStyles, &QAction::triggered, [=]{
+		connect(remStyles, &QAction::triggered, [=,this]{
 			QString html = ui.noteEdit->selectedHtml();
 			QString newHtml;
 			QRegExp reg("<[^>]+(style\\s*=\\s*\"[^\"]*\")");
@@ -160,7 +160,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 			QString js = QString("document.execCommand('insertHTML',false,'%1');").arg(newHtml);
 			frame->evaluateJavaScript(js);
 		});
-		connect(remFormat, &QAction::triggered, [=]{
+		connect(remFormat, &QAction::triggered, [=,this]{
 			QString txt = ui.noteEdit->selectedText();
 			txt.replace("\n","<br>");
 			txt.replace("\r","<br>");
@@ -172,7 +172,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 		act->setMenu(menu);
 		act->setEnabled(false);
-		connect(ui.noteEdit, &QWebView::selectionChanged, [=](){
+		connect(ui.noteEdit, &QWebView::selectionChanged, [=,this](){
 			if (ui.noteEdit->selectedText().isEmpty())
 				act->setEnabled(false);
 			else
@@ -190,7 +190,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		search->setCheckable(true);
 		auto target = ui.searchPanel->sizeHint().height();
 		ui.searchPanel->hide();
-		connect(search, &QAction::triggered, [=](bool checked){
+		connect(search, &QAction::triggered, [=,this](bool checked){
 			QPropertyAnimation *animation = new QPropertyAnimation(ui.searchPanel, "maximumHeight");
 			animation->setDuration(250);
 			if (checked){
@@ -200,20 +200,20 @@ NoteEditor::NoteEditor(QWidget *parent) :
 				animation->setStartValue(0);
 				animation->setEndValue(target);
 				// animating blured web edit is slow, so blur only after the animation
-				connect(animation, &QAbstractAnimation::finished, [=]{
+				connect(animation, &QAbstractAnimation::finished, [=,this]{
 					highlightFoundText();
 				});
 			}
 			else{
 				unHighlightFoundText();
 				animation->setEndValue(0);
-				connect(animation, &QAbstractAnimation::finished, [=]{
+				connect(animation, &QAbstractAnimation::finished, [=,this]{
 					ui.searchPanel->hide();
 				});
 			}
 			animation->start(QAbstractAnimation::DeleteWhenStopped);
 		});
-		connect(ui.searchFor, &QLineEdit::textChanged, [=](){
+		connect(ui.searchFor, &QLineEdit::textChanged, [=,this](){
 			highlightFoundText();
 		});
 		app->addToolButton(this, ui.toolBoxLayout, search);

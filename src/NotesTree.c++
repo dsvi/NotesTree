@@ -40,7 +40,7 @@ void NotesTree::root(Note *root)
 	QIcon attachOpenIcon = QIcon(":/ico/attachment");
 	QIcon attachAddIcon = QIcon(":/ico/attachment-add");
 	QAction	*attach = new QAction(attachOpenIcon, QString(), this);
-	attach->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
+	attach->setShortcut(QKeySequence(+Qt::CTRL + +Qt::Key_A));
 	attach->setEnabled(false);
 	app->addToolButton(this, ui.toolBoxLayout, attach);
 	auto setAttachOpen = [=](){
@@ -61,7 +61,7 @@ void NotesTree::root(Note *root)
 	app->addToolButton(this, ui.toolBoxLayout, copySelected);
 
 	auto sm = treeView->selectionModel();
-	connect(sm, &QItemSelectionModel::selectionChanged, [=](){
+	connect(sm, &QItemSelectionModel::selectionChanged, [=,this](){
 		auto selected = treeView->selectionModel()->selection();
 		if (selected.isEmpty()){
 			removeSelected->setEnabled(false);
@@ -112,15 +112,15 @@ void NotesTree::root(Note *root)
 		QAction *search = new QAction(this);
 		search->setIcon(QIcon(":/ico/search"));
 		search->setToolTip(tr("Filter notes"));
-		search->setShortcut(QKeySequence(Qt::SHIFT + Qt::Key_F));
+		search->setShortcut(QKeySequence(+Qt::SHIFT + +Qt::Key_F));
 		//search->setShortcut(QKeySequence::Find);
 		search->setCheckable(true);
-		auto doSearch = [=](){
+		auto doSearch = [=,this](){
 			searchFor(ui.searchFor->text(), NoteInTree::SearchType(ui.searchType->currentIndex()));
 		};
 		auto target = ui.searchPanel->sizeHint().height();
 		ui.searchPanel->hide();
-		connect(search, &QAction::triggered, [=](bool checked){
+		connect(search, &QAction::triggered, [=,this](bool checked){
 			QPropertyAnimation *animation = new QPropertyAnimation(ui.searchPanel, "maximumHeight");
 			animation->setDuration(250);
 			if (checked){
@@ -136,7 +136,7 @@ void NotesTree::root(Note *root)
 			else{
 				endSearch();
 				animation->setEndValue(0);
-				connect(animation, &QAbstractAnimation::finished, [=]{
+				connect(animation, &QAbstractAnimation::finished, [=,this]{
 					ui.searchPanel->hide();
 				});
 			}

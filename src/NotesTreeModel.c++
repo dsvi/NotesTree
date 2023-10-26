@@ -184,11 +184,11 @@ NoteInTree::NoteInTree(std::weak_ptr<Note> n, QThread *viewThread) : QObject(nul
 	connect(this, &NoteInTree::adopt, note, &Note::adopt);
 	connect(this, &NoteInTree::createSubnote, note, &Note::createSubnote);
 
-	auto c = connect(note, &Note::noteAdded, [=](weak_ptr<Note> mn){
+	auto c = connect(note, &Note::noteAdded, [=,this](weak_ptr<Note> mn){
 		auto vn = make_shared<NoteInTree>(mn, viewThread);
 		QMetaObject::invokeMethod(this, "addSubnote", Qt::QueuedConnection, Q_ARG(std::shared_ptr<NoteInTree>, vn));
 	});
-	connect(this, &NoteInTree::destroyed, [=](){
+	connect(this, &NoteInTree::destroyed, [=,this](){
 		this->disconnect(c);
 	});
 
@@ -272,7 +272,7 @@ void NoteInTree::markAll(const QString &str, SearchType t)
 		keywords_.emplace_back(str);
 	}
 	if (t == AllTheWords){
-		auto l = str.split(" ", QString::SkipEmptyParts);
+		auto l = str.split(" ", Qt::SkipEmptyParts);
 		for (auto &s:l)
 			keywords_.emplace_back(move(s));
 	}
@@ -285,7 +285,7 @@ void NoteInTree::markAll()
 		isLoadStarted = true;
 		auto n = note.lock();
 		if (n){
-			connect(n.get(), &Note::notePlainTextRdy, this, [=](const QString &txt){
+			connect(n.get(), &Note::notePlainTextRdy, this, [=,this](const QString &txt){
 				disconnect(n.get(), &Note::notePlainTextRdy, this, 0);
 				cachedTxt = txt + name;
 				mark();

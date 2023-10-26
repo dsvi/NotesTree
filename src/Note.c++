@@ -447,13 +447,13 @@ path Note::generateEmbedFilename(const std::filesystem::path &hint)
 	if (!exists(emDir))
 		create_directory(emDir);
 	auto simpleCase = emDir/hint.filename();
-	if (utf8len(hint.string()) < 100 && !exists(simpleCase))
+	if (hint.string().size() < 255 && !exists(simpleCase))
 		return simpleCase;
 	path ext = hint.extension();
 	path pref = hint.stem();
-	if (utf8len(pref.string()) > 100)
+	if (pref.string().size() > 100)
 		pref = path("");
-	if (utf8len(ext.string()) > 10)
+	if (ext.string().size() > 10)
 		ext = path("");
 	ui32 id = 0;
 	path retFilename;

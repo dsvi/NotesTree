@@ -1,9 +1,6 @@
 <RCC>
     <qresource prefix="/">
-        <file>68.png</file>
-        <file>loading-note.html</file>
-        <file>default-note.html</file>
-        <file>css</file>
+
     </qresource>
     <qresource prefix="/ico">
         <file alias="bold">ico/bold.svg</file>
@@ -22,5 +19,6 @@
         <file alias="preformatted">ico/terminal.svg</file>
         <file alias="link">ico/link.svg</file>
         <file alias="copy">ico/copy.svg</file>
+        <file alias="NotesTree">ico/NotesTree.svg</file>
     </qresource>
 </RCC>

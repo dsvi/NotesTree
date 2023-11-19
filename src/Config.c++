@@ -11,7 +11,7 @@ Config::Config(QObject *parent) : QObject(parent)
 
 QSettings Config::unimportant_settings()
 {
-	auto fn = QStandardPaths::standardLocations(QStandardPaths::CacheLocation).first();
+	auto fn = QStandardPaths::standardLocations(QStandardPaths::CacheLocation).first() + "/window-state.cfg";
 	return QSettings(fn, QSettings::Format::IniFormat);
 }
 

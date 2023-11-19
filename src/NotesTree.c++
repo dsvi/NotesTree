@@ -21,28 +21,25 @@ void NotesTree::root(Note *root)
 		else
 			emit noteActivated(std::weak_ptr<Note>());
 	});
-
-	QAction *addNew = new QAction(QIcon(":/ico/add"), QString(), this);
-	//QAction *addNew = new QAction(QIcon::fromTheme("list-add"), QString(), this);
+	
+	QAction *addNew = app->addToolButton(this, ui.toolBoxLayout, ":/ico/add");
 	addNew->setShortcuts(QKeySequence::New);
 	addNew->setToolTip(tr("Create a new note. As a subnote to the selected note, or at root of the notes tree"));
 	connect(addNew, &QAction::triggered, this, &NotesTree::addNew);
-	app->addToolButton(this, ui.toolBoxLayout, addNew);
-
-	QAction	*removeSelected = new QAction(QIcon(":/ico/remove"), QString(), this);
-	//QAction	*removeSelected = new QAction(QIcon::fromTheme("list-remove"), QString(), this);
+	
+	QAction	*removeSelected = app->addToolButton(this, ui.toolBoxLayout, ":/ico/remove");
 	removeSelected->setShortcuts(QKeySequence::Delete);
 	removeSelected->setToolTip(tr("Delete selected note and its subnotes"));
 	removeSelected->setEnabled(false);
-	app->addToolButton(this, ui.toolBoxLayout, removeSelected);
-	connect(removeSelected, &QAction::triggered, this, &NotesTree::removeSelected);
 
-	QIcon attachOpenIcon = QIcon(":/ico/attachment");
-	QIcon attachAddIcon = QIcon(":/ico/attachment-add");
-	QAction	*attach = new QAction(attachOpenIcon, QString(), this);
+	connect(removeSelected, &QAction::triggered, this, &NotesTree::removeSelected);
+	
+	float scale = devicePixelRatioF();
+	QIcon attachOpenIcon = app->themedSVGIcon(":/ico/attachment", scale);
+	QIcon attachAddIcon = app->themedSVGIcon(":/ico/attachment-add", scale);
+	QAction	*attach = app->addToolButton(this, ui.toolBoxLayout, attachAddIcon);
 	attach->setShortcut(QKeySequence(+Qt::CTRL + +Qt::Key_A));
 	attach->setEnabled(false);
-	app->addToolButton(this, ui.toolBoxLayout, attach);
 	auto setAttachOpen = [=](){
 		attach->setIcon(attachOpenIcon);
 		attach->setToolTip(tr("Open attachment folder"));
@@ -51,14 +48,13 @@ void NotesTree::root(Note *root)
 		attach->setIcon(attachAddIcon);
 		attach->setToolTip(tr("Add attachment"));
 	};
-	QAction	*copySelected = new QAction(QIcon(":/ico/copy"), QString(), this);
+	QAction	*copySelected = app->addToolButton(this, ui.toolBoxLayout, ":/ico/copy"); 
 	copySelected->setShortcuts(QKeySequence::Copy);
 	copySelected->setToolTip(tr(
 		"Copy note's files to clipboard,\n"
 		"so you can later paste them anywhere in the filesystem."));
 	copySelected->setEnabled(false);
 	connect(copySelected, &QAction::triggered, this, &NotesTree::copySelectedPathsToClipboard);
-	app->addToolButton(this, ui.toolBoxLayout, copySelected);
 
 	auto sm = treeView->selectionModel();
 	connect(sm, &QItemSelectionModel::selectionChanged, [=,this](){
@@ -109,8 +105,7 @@ void NotesTree::root(Note *root)
 		});
 	}
 	{
-		QAction *search = new QAction(this);
-		search->setIcon(QIcon(":/ico/search"));
+		QAction *search = 		app->addToolButton(this, ui.toolBoxLayout, ":/ico/search");
 		search->setToolTip(tr("Filter notes"));
 		search->setShortcut(QKeySequence(+Qt::SHIFT + +Qt::Key_F));
 		//search->setShortcut(QKeySequence::Find);
@@ -145,7 +140,6 @@ void NotesTree::root(Note *root)
 
 		connect(ui.searchFor, &QLineEdit::textChanged, doSearch);
 		connect(ui.searchType, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), doSearch);
-		app->addToolButton(this, ui.toolBoxLayout, search);
 	}
 }
 

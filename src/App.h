@@ -22,7 +22,15 @@ public:
 	QThread *ioThread();
 	Downloader *downloader();
 
-	void addToolButton(QWidget *parent, QBoxLayout *l, QAction *a);
+	QIcon themedSVGIcon(QString icon, float scale);	
+	QAction *addToolButton(
+		QWidget *parent,
+		QLayout *l,
+		QIcon    icon);	
+	QAction *addToolButton(
+		QWidget *parent,
+		QLayout *l,
+		QString icon);
 	void addToolBoxSpacer(QBoxLayout *l);
 
 	QString errorMessage(std::exception_ptr e, const QString &action = QString());
@@ -43,8 +51,6 @@ private:
 	QThread      ioThread_;
 	Downloader   downloader_;
 	QMainWindow *mainWnd_;
-	qreal  hmm_ = 0; /// pixel per mm horizontal
-	qreal  vmm_ = 0;
 	Config       config_;
 };
 

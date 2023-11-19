@@ -31,8 +31,9 @@ endif()
 # otherwise cmake --install tries to install all the dependeencies
 install(CODE "set(CMAKE_INSTALL_LOCAL_ONLY true)")
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets WebKitWidgets Network)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+#set(QT_VERSION_MAJOR 6)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Xml Svg Network)
 
 set(PROJECT_SOURCES
     src/precomp.h
@@ -54,6 +55,8 @@ set(PROJECT_SOURCES
     src/Note.h
     src/NoteEditor.c++
     src/NoteEditor.h
+    src/NoteEditorSearchHighlighter.c++
+    src/NoteEditorSearchHighlighter.h
     src/NotesTree.c++
     src/NotesTree.h
     src/NotesTreeModel.c++
@@ -92,7 +95,12 @@ else()
 endif()
 target_include_directories(NotesTree PRIVATE src)
 target_precompile_headers(NotesTree PRIVATE src/precomp.h)
-target_link_libraries(NotesTree PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::WebKitWidgets Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(NotesTree PRIVATE 
+    Qt${QT_VERSION_MAJOR}::Widgets 
+    Qt${QT_VERSION_MAJOR}::Xml 
+    Qt${QT_VERSION_MAJOR}::Svg 
+    Qt${QT_VERSION_MAJOR}::Network
+)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

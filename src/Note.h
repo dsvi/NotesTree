@@ -6,6 +6,7 @@ class Note : public QObject
 {
 	Q_OBJECT
 public:
+	/// addSubnotesDir() or addTextFile() should be called for it to be valid
 	Note();
 	~Note();
 	QString name() const;
@@ -20,6 +21,7 @@ signals:
 	void notePlainTextRdy(const QString &txt);
 	void attachReady(const QString &attachDirPath);
 	void pathsReady(const std::vector<QString> &paths);
+	void updateUrl(QString from, QString to);
 public slots:
 
 	/// create hierarchy of notes and subnotes from the root folder
@@ -44,7 +46,11 @@ public slots:
 
 	/// emits notePlainTextRdy
 	void getNotePlainTxt();
-
+	
+	/// checks `img` and `source` elements for src and downloads if required.
+	/// than emits updateUrl() for the editor to patch the note text.
+	void handleRefs(QString html);
+	
 	/// creates attach, if did not exist. emits attachReady, if done
 	void attach();
 
@@ -57,13 +63,13 @@ private:
 		return name_.isNull();
 	}
 	std::vector<std::shared_ptr<Note>> subNotes_;
-	std::map<QString, QString>         urlsPatch_;
 	std::set<QString>                  urlsInDownload_;
+	std::set<std::filesystem::path>    validEmbeds_;
 
 	/// populate list of subnotes and the name from the @path dir
-	void addFromSubnotesDir(const std::filesystem::path &path);
+	void addSubnotesDir(const std::filesystem::path &path);
 	/// pathname should end on textExt
-	void createFromNoteTextFile(const std::filesystem::path &textPathname);
+	void addTextFile(const std::filesystem::path &textPathname);
 
 	void move(const std::filesystem::path &newPath, const std::filesystem::path &newFileName);
 	void adopt_(const std::shared_ptr<Note> &n);
@@ -81,8 +87,6 @@ private:
 	/// returns number of parent nodes to this one. including root
 	int hierarchyDepth() const;
 
-	/// add the file as attached to the note
-	//void attach(const QFileInfo &fi);
 
 	std::filesystem::path pathToNote() const;
 	std::filesystem::path attachDir() const;
@@ -109,8 +113,6 @@ private:
 
 	QString loadTxt();
 	void saveTxt(const QString &txt);
-
-	QString applyPatch(const QString &html);
 
 	static
 	QString decodeFromFilename(const std::filesystem::path& fn);

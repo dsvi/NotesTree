@@ -1,4 +1,5 @@
 #include "Note.h"
+#include "NoteEditor.h"
 
 using namespace std;
 using namespace std::filesystem;
@@ -72,47 +73,29 @@ std::filesystem::path Note::encodeToFilename(const QString &name)
 	return path(ret.toUtf8().constBegin());
 }
 
-void Note::addFromSubnotesDir(const std::filesystem::path &path)
+void Note::addSubnotesDir(const std::filesystem::path &path)
 {
 	if (name_.isNull())
 		name_ = decodeFromFilename(path.filename());
-//	for (auto& fi : directory_iterator(path)){
-//		if (fi.is_directory()){
-//			auto ext = fi.path().extension();
-//			if (ext == attachExt or ext == embedExt)
-//				continue;			
-//		}
-//		QString name = fi.path().filename().c_str();
-//		if (!name.endsWith(Note::textExt))
-//			continue;
-//		auto subNote = make_shared<Note>();
-//		subNote->createFromNoteTextFile(fi.path());
-//		addNote(subNote);
-//		class path subDir = subNote->subNotesDir();
-//		if (exists(subDir))
-//			subNote->addFromSubnotesDir(subDir);
-//		dirs.erase(toQS(encodeToFilename(subNote->name_)));
-//		dirs.erase(toQS(encodeToFilename(subNote->name_ + attachExt)));
-//		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
-//	}
-	
+
 	std::unordered_map<QString, class path> dirs;
 	for (auto&& x : directory_iterator(path))
-		// TODO: check for . and .. not needed anymore?
-		if (x.status().type() == file_type::directory && x.path().filename().native()[0] != '.')
+		if (x.status().type() == file_type::directory)
 			dirs.insert({x.path().filename().c_str(), x});
 	for (auto& fi : directory_iterator(path)){
 		if (fi.is_directory())
 			continue;
 		auto ext = fi.path().extension();
-		if (ext != Note::textExt)
+		if (ext != Note::textExt){
+			app->reportErrorMsg(tr("Unexpected file '%1'").arg(fi.path().c_str()));		
 			continue;
+		}
 		auto subNote = make_shared<Note>();
-		subNote->createFromNoteTextFile(fi.path());
+		subNote->addTextFile(fi.path());
 		addNote(subNote);
 		class path subDir = subNote->subNotesDir();
 		if (exists(subDir))
-			subNote->addFromSubnotesDir(subDir);
+			subNote->addSubnotesDir(subDir);
 		dirs.erase(toQS(encodeToFilename(subNote->name_)));
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + attachExt)));
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
@@ -125,9 +108,8 @@ void Note::addFromSubnotesDir(const std::filesystem::path &path)
 			continue;
 		}
 		auto subNote = make_shared<Note>();
-		subNote->name_ = decodeFromFilename(dirPath.filename());
+		subNote->addSubnotesDir(dirPath);
 		addNote(subNote);
-		subNote->addFromSubnotesDir(dirPath);
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + attachExt)));
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
 		dir = dirs.erase(dir);
@@ -139,11 +121,11 @@ void Note::addFromSubnotesDir(const std::filesystem::path &path)
 		auto subNote = make_shared<Note>();
 		subNote->name_ = decodeFromFilename(dirPath.filename());
 		addNote(subNote);
-		subNote->addFromSubnotesDir(dirPath);
+		subNote->addSubnotesDir(dirPath);
 	}
 }
 
-void Note::createFromNoteTextFile(const path &fi)
+void Note::addTextFile(const path &fi)
 {
 	path name = fi.filename();
 	ASSERT(name.extension() == Note::textExt);
@@ -160,7 +142,7 @@ void Note::createHierarchyFromRoot(const path &p)
 		name_ = toQS(p);
 		if (!exists(p))
 			throw RecoverableException(QCoreApplication::translate("Filesystem", "directory '%1' doesnt exist").arg(name_));
-		addFromSubnotesDir(p);
+		addSubnotesDir(p);
 	}
 	catch(...){
 		subNotes_.clear();
@@ -392,55 +374,6 @@ fstream createOutStream(std::filesystem::path outFilename)
 	return out;
 }
 
-static const char * UrlRegexps[3] = {
-	"<(?:img|source)[^>]+src\\s*=\\s*\"([^\"]+)\"",
-	"<(?:img|source)[^>]+src\\s*=\\s*'([^']+)'",
-	"<(?:img|source)[^>]+src\\s*=\\s*[^'\"](\\S+)"
-};
-
-static
-QString changeUrls(QString html, std::function<QString(const QString &)> mapper){
-	for (auto r : UrlRegexps){
-		QString newHtml;
-		int from = 0;
-		int to;
-		QRegExp reg(r);
-		int pos = 0;
-		while (true){
-			pos = reg.indexIn(html, pos);
-			if (pos < 0)
-				break;
-//			qDebug()<< reg.cap(0);
-//			qDebug()<< reg.cap(1);
-			pos += reg.cap(0).size();
-			auto cap = reg.cap(1);
-			QString newUrl = mapper(cap);
-			if (newUrl == cap)
-				continue;
-			to = reg.pos(1);
-			newHtml += html.midRef(from, to - from);
-			newHtml += newUrl;
-			from = to + cap.size();
-		}
-		if (from == 0)
-			continue;
-		newHtml += html.midRef(from, html.size());
-		html = move(newHtml);
-	}
-	return html;
-}
-
-static
-set<QString> grabUrlsOfEmbeddedFiles(const QString &html)
-{
-	set<QString> srcs;
-	changeUrls(html, [&](const QString &from)->QString {
-		srcs.insert(from);
-		return from;
-	});
-	return srcs;
-}
-
 path Note::generateEmbedFilename(const std::filesystem::path &hint)
 {
 	auto emDir = embedDir();
@@ -490,22 +423,11 @@ void Note::downloaded(const QString &originalUrl, const QByteArray &content, con
 			out.close();
 			embedUrl = urlEnc("./" + toQS(embed.parent_path().filename() / embed.filename()));
 		}
-		urlsPatch_[originalUrl] = embedUrl;
-		saveTxt(applyPatch(loadTxt()));
+		emit updateUrl(originalUrl, embedUrl);
 	}
 	catch(...){
 		warning(tr("Problems while getting embedded content for '%1'\n").arg(name_));
 	}
-}
-
-QString Note::applyPatch(const QString &html)
-{
-	return changeUrls(html, [&](const QString& from)->QString{
-		auto i = urlsPatch_.find(from);
-		if (i == urlsPatch_.end())
-			return from;
-		return i->second;
-	});
 }
 
 void Note::saveTxt(const QString &txt)
@@ -521,7 +443,7 @@ void Note::saveTxt(const QString &txt)
 		rename(outFilename, textPathname());
 	}
 	catch(...){
-		warning(tr("Can't save note '%1' to file '%2'\n").arg(name_).arg(toQS(outFilename)));
+		warning(tr("Can't save note '%1' to file '%2'\n").arg(name_, toQS(outFilename)));
 	}
 }
 
@@ -559,41 +481,18 @@ void Note::startEditing()
 void Note::save(QString html)
 {
 	try{
-		html = applyPatch(html);
-		set<path> validEmbeds;
-		auto urls = grabUrlsOfEmbeddedFiles(html);
-		for (auto u : urls){
-			if (u.startsWith(".")){
-				path em = toPath(QUrl::fromPercentEncoding(u.toUtf8()));
-				validEmbeds.insert(em.filename());
-				continue;
-			}
-			QString filePrefix = "file://";
-			if (u.startsWith(filePrefix)){
-				QString url = u;
-				url.remove(0, filePrefix.size());
-				url = QUrl::fromPercentEncoding(url.toUtf8());
-				auto srcPath = toPath(url);
-				path dstPath = generateEmbedFilename(srcPath);
-				copy_file(srcPath,dstPath);
-				validEmbeds.insert(dstPath.filename());
-				auto dstUrl = urlEnc("./" + toQS(dstPath.parent_path().filename() / dstPath.filename()));
-				urlsPatch_[u] = dstUrl;
-				continue;
-			}
-			if (urlsInDownload_.find(u) != urlsInDownload_.end())
-				continue;
-			auto dlr = app->downloader();
-			connect(dlr, &Downloader::finished, this, &Note::downloaded, Qt::UniqueConnection);
-			dlr->get(u);
-			urlsInDownload_.insert(u);
-		}
-		// just in case we have updated the patch by copeing local file
-		html = applyPatch(html);
+		QDomDocument doc;
+		doc.setContent(html);
+		auto ht = doc.firstChild().toElement(); 
+		ht.firstChildElement("body").removeAttribute("style");
+		auto head = ht.firstChildElement("head");
+		head.removeChild(head.firstChildElement("style"));
+		html = doc.toString(0);
 		saveTxt(html);
+		handleRefs(html); // to get validEmbeds_
 		if (exists(embedDir())){
 			for (auto&& ef : directory_iterator(embedDir())){ // remove unused embeds
-				if (validEmbeds.find(ef.path().filename()) == validEmbeds.end())
+				if (validEmbeds_.find(ef.path().filename()) == validEmbeds_.end())
 					remove(ef.path());
 			}
 		}
@@ -606,7 +505,7 @@ void Note::save(QString html)
 
 void Note::stopEditing()
 {
-	urlsPatch_.clear();
+	validEmbeds_.clear();
 }
 
 void Note::getNotePlainTxt()
@@ -629,6 +528,39 @@ void Note::getNotePlainTxt()
 	}
 	txt = txt.simplified();
 	emit notePlainTextRdy(txt);
+}
+
+void Note::handleRefs(QString html)
+{
+	validEmbeds_.clear();
+	VisitSrcUrls(html, [&](QDomElement e){
+		auto url = e.attribute("src");
+		if (url.isEmpty())
+			return;
+		if (url.startsWith(".")){
+			path em = toPath(QUrl::fromPercentEncoding(url.toUtf8()));
+			validEmbeds_.insert(em.filename());
+			return;
+		}
+		QString filePrefix = "file://";
+		if (url.startsWith(filePrefix)){
+			QString u = url;
+			u.remove(0, filePrefix.size());
+			u = QUrl::fromPercentEncoding(u.toUtf8());
+			auto srcPath = toPath(u);
+			path dstPath = generateEmbedFilename(srcPath);
+			copy_file(srcPath,dstPath);
+			validEmbeds_.insert(dstPath.filename());
+			auto dstUrl = urlEnc("./" + toQS(dstPath.parent_path().filename() / dstPath.filename()));
+			emit updateUrl(url, dstUrl);			
+			return;
+		}
+		if (urlsInDownload_.find(url) != urlsInDownload_.end())
+			return;
+		auto dlr = app->downloader();
+		connect(dlr, &Downloader::finished, this, &Note::downloaded, Qt::UniqueConnection);
+		dlr->get(url);
+	});	
 }
 
 void Note::attach()
@@ -664,6 +596,7 @@ void Note::getNoteRelatedPaths()
 
 path Note::pathToNote() const
 {
+	ASSERT(!name_.isEmpty());
 	if (parent_)
 		return parent_->subNotesDir();
 	else
@@ -754,12 +687,13 @@ void Note::changeName(const QString &name)
 			QString oldUrlPrefix = urlEnc("./" + toQS(encodeToFilename(name_ + embedExt)));
 			auto oldPrefLen = oldUrlPrefix.size();
 			QString newUrlPrefix = urlEnc("./" + toQS(encodeToFilename(name  + embedExt)));
-			html = changeUrls(html, [&](const QString& from)->QString{
-				if (!from.startsWith(oldUrlPrefix))
-					return from;
-				QString ret = from;
-				ret.remove(0, oldPrefLen).prepend(newUrlPrefix);
-				return ret;
+			html = VisitSrcUrls(html, [&](QDomElement e){
+				auto url = e.attribute("src");
+				if (!url.startsWith(oldUrlPrefix))
+					return;
+				QString to = url;
+				to.remove(0, oldPrefLen).prepend(newUrlPrefix);
+				e.setAttribute("src", to);
 			});
 			saveTxt(html);
 		}

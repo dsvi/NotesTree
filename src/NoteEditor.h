@@ -1,6 +1,7 @@
 #ifndef NOTEEDITOR_H
 #define NOTEEDITOR_H
 
+#include "NoteEditorSearchHighlighter.h"
 #include "ui_NoteEditor.h"
 #include "Note.h"
 
@@ -14,6 +15,7 @@ signals:
 	void startEditingTxt();
 	void saveTxt(const QString n);
 	void stopEditingTxt();
+	void handleRefs(QString hmtl);
 public slots:
 	void editTextFor(std::weak_ptr<Note> n);
 	void noteText(const QString &txt, const QString &basePath);
@@ -21,16 +23,21 @@ public slots:
 	void save();
 
 	void changed();
+
+	void updateUrl(QString from, QString to);
 private:
 	Ui::NoteEditor ui;
 	std::vector<QMetaObject::Connection> connectionsToNote_;
+	NoteEditorSearchHighlighter *searchHighlighter_ = nullptr;
 	QTimer autosaveTimer_;
 	bool   haveToSave_ = false;
-
-	QWebElement currentEl_;
 
 	void highlightFoundText();
 	void unHighlightFoundText();
 };
+
+/// visits `img` and `source` urls.
+/// returns html possibly edited by \p f 
+QString VisitSrcUrls(QString html, std::function<void(QDomElement)> &&f);
 
 #endif // NOTEEDITOR_H

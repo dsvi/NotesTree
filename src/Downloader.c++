@@ -1,7 +1,8 @@
 #include "Downloader.h"
 
-Downloader::Downloader(QObject *parent) : QObject(parent)
+Downloader::Downloader(QObject *parent) : QObject(parent), downloader_(this)
 {
+	downloader_.setAutoDeleteReplies(true);
 	connect(&downloader_, &QNetworkAccessManager::finished, this, [=, this](QNetworkReply *reply){
 		downloadFinished(reply);
 	});

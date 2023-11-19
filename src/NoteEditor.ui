@@ -14,8 +14,27 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="mainLayout">
+   <property name="spacing">
+    <number>5</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
-    <layout class="QHBoxLayout" name="toolBoxLayout"/>
+    <layout class="QHBoxLayout" name="toolBoxLayout">
+     <property name="spacing">
+      <number>5</number>
+     </property>
+    </layout>
    </item>
    <item>
     <widget class="QWidget" name="searchPanel" native="true">
@@ -43,23 +62,10 @@
     </widget>
    </item>
    <item>
-    <widget class="QWebView" name="noteEdit">
-     <property name="url">
-      <url>
-       <string>about:blank</string>
-      </url>
-     </property>
-    </widget>
+    <widget class="QTextEdit" name="noteEdit"/>
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QWebView</class>
-   <extends>QWidget</extends>
-   <header>QtWebKitWidgets/QWebView</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

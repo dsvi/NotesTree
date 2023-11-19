@@ -5,19 +5,24 @@
 #include <QAction>
 #include <QApplication>
 #include <QBoxLayout>
+#include <QDomDocument>
+#include <QGraphicsBlurEffect>
+#include <QInputDialog>
 #include <QMainWindow>
 #include <QMenu>
 #include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QScreen>
 #include <QStandardPaths>
 #include <QStringBuilder>
+#include <QSvgRenderer>
+#include <QSyntaxHighlighter>
 #include <QToolButton>
 #include <QtCore>
 #include <QtDebug>
 #include <QtGui>
-#include <QtWebKitWidgets>
 
 #include <atomic>
 #include <cstring>
@@ -38,8 +43,12 @@
 #include "App.h"
 #include "Exceptions.h"
 
+#ifndef NDEBUG
+#define DEBUG
+#endif
+
 #ifdef DEBUG
-	#define ASSERT(x) Q_ASSERT(x)
+	#define ASSERT(x) if (!(x)) throw std::runtime_error("assert failed"); 
 #else
 	#define ASSERT(x)
 #endif

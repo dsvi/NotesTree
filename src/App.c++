@@ -20,15 +20,59 @@ App::App(QObject *parent) : QObject(parent)
 	downloader_.moveToThread(&ioThread_);
 }
 
-void App::addToolButton(QWidget *parent, QBoxLayout *l, QAction *a)
+static
+int getIconSize(){
+	auto fm = QApplication::fontMetrics();
+	auto size = fm.height();
+	return size * 1.2;
+}
+
+QIcon App::themedSVGIcon(QString icon, float scale)
 {
-	auto b = new QToolButton(parent);
-	b->setAutoRaise(true);
-	b->setDefaultAction(a);
-	if (a->menu()){
-		b->setPopupMode(QToolButton::InstantPopup);
+	// open svg resource load contents to qbytearray
+	QFile file(icon);
+	file.open(QIODevice::ReadOnly);
+	QByteArray baData = file.readAll();
+	// load svg contents to xml document and edit contents
+	QDomDocument doc;
+	doc.setContent(baData);
+	auto c = QApplication::palette().text().color();
+	auto color = QString("#%1%2%3").arg(c.red(), 0, 16).arg(c.green(), 0, 16).arg(c.blue(), 0, 16);
+	for (auto el : {"path","polygon"}){
+		auto list = doc.elementsByTagName(el);
+		for (int i = 0; i < list.count(); i++)	
+			list.at(i).toElement().setAttribute("fill", color);
 	}
+	// create svg renderer with edited contents
+	QSvgRenderer svgRenderer(doc.toByteArray());
+	auto size = getIconSize();
+	// create pixmap target (could be a QImage)
+	QPixmap pix(size*scale, size*scale);
+	pix.fill(Qt::transparent);
+	// create painter to act over pixmap
+	QPainter pixPainter(&pix);
+	// use renderer to render over painter which paints on pixmap
+	svgRenderer.render(&pixPainter);
+	return QIcon(pix);
+}
+
+QAction *App::addToolButton(QWidget *parent, QLayout *l, QIcon icon)
+{
+	auto act = new QAction(parent);
+	auto b = new QToolButton(parent);
+	auto size = getIconSize();
+	b->setIconSize(QSize(size,size));
+	act->setIcon(icon);
+	b->setAutoRaise(true);
+	b->setPopupMode(QToolButton::InstantPopup);
+	b->setDefaultAction(act);
 	l->addWidget(b);
+	return act;
+}
+
+QAction *App::addToolButton(QWidget *parent, QLayout *l, QString icon)
+{
+	return addToolButton(parent, l, themedSVGIcon(icon, parent->devicePixelRatioF()));
 }
 
 void App::addToolBoxSpacer(QBoxLayout *l)

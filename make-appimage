@@ -1,22 +1,6 @@
 #!/bin/sh
 
-# for ubuntu install: qt5-default libqt5webkit5-dev //libqt5svg5-dev// libboost-filesystem-dev
-
 set -e
 # Any subsequent commands which fail will cause the shell script to exit immediately
 
-
-# build
-qmake
-make -j $(nproc)
-sudo make install
-# create AppImage
-mkdir -p appimage/usr/bin
-mkdir -p appimage/usr/share/applications
-mkdir -p appimage/usr/share/icons/hicolor/scalable/apps
-mkdir -p appimage/usr/plugins/imageformats/
-cp NotesTree appimage/usr/bin/
-cp NotesTree.desktop appimage/usr/share/applications/
-cp NotesTree.svg appimage/usr/share/icons/hicolor/scalable/apps
-cp /usr/lib/x86_64-linux-gnu/qt5/plugins/imageformats/libqsvg.so appimage/usr/plugins/imageformats/
-linuxdeployqt-continuous-x86_64.AppImage appimage/usr/share/applications/NotesTree.desktop -bundle-non-qt-libs -appimage -extra-plugins=svg
+linuxdeploy --executable NotesTree --desktop-file NotesTree.desktop --icon-file NotesTree.svg  --appdir AppDir --output appimage

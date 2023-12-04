@@ -4,8 +4,6 @@
 #include "Config.h"
 #include "Downloader.h"
 
-// for example: res = ":/default-note.html"
-QString GetResourceString(const char* res);
 
 /// this isn't meant to be deleted
 class App : public QObject

@@ -11,13 +11,6 @@ What makes it different?
 ![screenshot](screenshot.png) 
 
 # Getting it
-You can get the fresh Appimage [from the downloads section](https://bitbucket.org/baltic/notestree/downloads/Notes_Tree-x86_64.AppImage).
+You can get the wayland only x86-64 [Appimage](https://appimage.org/) binary at the releases section.
 
-...or build it yourself. For ubuntu you'll need libboost-filesystem-dev, qt5-default, libqt5webkit5-dev, libqt5svg5-dev installed.
-then do:
-```
-qmake
-make
-sudo make install
-```
-`PKGBUILD` file is also in the repository.
+...or build it yourself. You'll need qt5 or qt6 installed.

@@ -28,6 +28,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     #string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
 endif()
 
+option(NOTES_STATIC_BUILD "Try to build static version of the program, without dependency on any shared library." ON)
+
+if (NOTES_STATIC_BUILD)
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++ -static-libgcc")
+endif()
+
 # otherwise cmake --install tries to install all the dependeencies
 install(CODE "set(CMAKE_INSTALL_LOCAL_ONLY true)")
 
@@ -101,6 +107,12 @@ target_link_libraries(NotesTree PRIVATE
     Qt${QT_VERSION_MAJOR}::Svg 
     Qt${QT_VERSION_MAJOR}::Network
 )
+
+if (NOTES_STATIC_BUILD)
+    target_link_libraries(NotesTree PRIVATE 
+        Qt${QT_VERSION_MAJOR}::WaylandClientPrivate
+    )
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

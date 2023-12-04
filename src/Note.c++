@@ -57,13 +57,13 @@ std::filesystem::path Note::encodeToFilename(const QString &name)
 	ret.reserve(name.size());
 	for (auto i = name.begin(); i != name.end(); ++i){
 		auto c = *i;
-		if (c == delimChar || c == L'/' || c == L'\\' || (i == name.begin() && c == L'.')){
+		if (c == delimChar || c == '/' || c == '\\' || (i == name.begin() && c == '.')){
 			ret += delimChar;
 			QString num;
 			num.setNum(c.unicode(), 16);
 			ASSERT(num.length() <= 2);
 			if (num.length() < 2)
-				ret += L'0';
+				ret += '0';
 			ret += num;
 		}
 		else{

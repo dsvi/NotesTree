@@ -353,8 +353,6 @@ void NoteEditor::noteText(const QString &txt, const QString &basePath)
 {
 	this->setEnabled(true);
 	QString html = txt;
-	if (txt.isEmpty())
-		html = GetResourceString(":/default-note.html");
 	auto doc = ui.noteEdit->document();
 	doc->setBaseUrl("file:/" + basePath + "/");
 	doc->setHtml(html);

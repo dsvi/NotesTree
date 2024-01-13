@@ -1,0 +1,6 @@
+notes-tree (1.2-1) UNRELEASED; urgency=low
+
+  * Initial release. Closes: #nnnn
+    <nnnn is the bug number of your ITP>
+
+ -- ds <>  Sun, 07 Jan 2024 02:13:41 +0300

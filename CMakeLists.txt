@@ -28,7 +28,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     #string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
 endif()
 
-option(NOTES_STATIC_BUILD "Try to build static version of the program, without dependency on any shared library." ON)
+option(NOTES_STATIC_BUILD "Try to build static version of the program, without dependency on any shared library." OFF)
 
 if (NOTES_STATIC_BUILD)
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++ -static-libgcc")
@@ -133,6 +133,13 @@ install(TARGETS NotesTree
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(FILES
+    NotesTree.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications
+)
+install(FILES
+    NotesTree.svg     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)

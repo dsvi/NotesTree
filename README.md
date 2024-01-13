@@ -11,6 +11,15 @@ What makes it different?
 ![screenshot](screenshot.png) 
 
 # Getting it
+
+## AppImage
+
 You can get the wayland only x86-64 [Appimage](https://appimage.org/) binary at the releases section.
 
+## DEB
+
+Or you can run `make-deb` to build a deb package. You will need `build-essential` and `devscripts` packages installed.
+
+## Other
+ 
 ...or build it yourself. You'll need qt5 or qt6 installed.

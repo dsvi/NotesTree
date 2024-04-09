@@ -6,5 +6,5 @@ Name=Notes Tree
 Comment=Note taking app
 Icon=NotesTree
 Exec=NotesTree
-Categories=TextTools;
+Categories=Utility;TextTools;
 

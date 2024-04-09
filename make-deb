@@ -5,6 +5,7 @@ set -e
 
 NAME=notes-tree
 VERSION=$(git describe --tags)
+VERSION=${VERSION%%-*}
 
 BUILD_FOLDER=../NotesTree-build-deb/${NAME}-${VERSION}
 rm -rf ${BUILD_FOLDER}
@@ -12,7 +13,7 @@ mkdir -p ${BUILD_FOLDER}
 cp -r * ${BUILD_FOLDER}
 cd ${BUILD_FOLDER}
 
-tar -cavf ../${NAME}_${VERSION}.orig.tar.gz ./
+tar -cavf ../${NAME}_${VERSION}.orig.tar.xz ./
 
 dpkg-source -b .
 
@@ -20,11 +21,11 @@ echo
 echo
 echo Creating and installing .deb file with all the build dependencies. It will later be uninstalled.
 sudo mk-build-deps -i
-mv notes-tree-build-deps_* ..
+mv ${NAME}-build-deps_* ..
 
 dpkg-buildpackage
 
-sudo dpkg --purge notes-tree-build-deps
+sudo dpkg --purge ${NAME}-build-deps
 
 echo
 echo

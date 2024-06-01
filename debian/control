@@ -12,7 +12,7 @@ Rules-Requires-Root: no
 Package: notes-tree
 Architecture: any
 Multi-Arch: foreign
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}, qt6-wayland
 Description: NotesTree is a note taking app, which organizes notes in a hierarchical (tree like) structure.
  What makes it different?
  Very simple file structure. Your notes are easily available even without NotesTree installed. They are stored as html files. Just open them in any web browser, including the one on your mobile phone.

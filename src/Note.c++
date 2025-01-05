@@ -481,13 +481,6 @@ void Note::startEditing()
 void Note::save(QString html)
 {
 	try{
-		QDomDocument doc;
-		doc.setContent(html);
-		auto ht = doc.firstChild().toElement(); 
-		ht.firstChildElement("body").removeAttribute("style");
-		auto head = ht.firstChildElement("head");
-		head.removeChild(head.firstChildElement("style"));
-		html = doc.toString(0);
 		saveTxt(html);
 		handleRefs(html); // to get validEmbeds_
 		if (exists(embedDir())){

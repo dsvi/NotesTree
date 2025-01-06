@@ -12,3 +12,4 @@ linuxdeploy --executable $BUILD_FOLDER/NotesTree --desktop-file NotesTree.deskto
 
 rm -rf ${BUILD_FOLDER}
 rm -rf AppDir
+

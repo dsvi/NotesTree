@@ -3,4 +3,12 @@
 set -e
 # Any subsequent commands which fail will cause the shell script to exit immediately
 
-linuxdeploy --executable NotesTree --desktop-file NotesTree.desktop --icon-file NotesTree.svg  --appdir AppDir --output appimage
+BUILD_FOLDER=../NotesTree-build
+
+cmake -G Ninja -B $BUILD_FOLDER
+cmake --build $BUILD_FOLDER
+
+linuxdeploy --executable $BUILD_FOLDER/NotesTree --desktop-file NotesTree.desktop --icon-file NotesTree.svg  --appdir AppDir --output appimage
+
+rm -rf ${BUILD_FOLDER}
+rm -rf AppDir

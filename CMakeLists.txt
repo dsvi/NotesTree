@@ -7,7 +7,8 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif ()
 
-project(NotesTree VERSION 1.2 LANGUAGES CXX)
+# TODO: fix version also in debian/changelog
+project(NotesTree VERSION 1.2.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -21,8 +22,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#    message("Using libc++")
-#    string(APPEND CMAKE_CXX_FLAGS " -stdlib=libc++")
     string(APPEND CMAKE_CXX_FLAGS " -Wno-unqualified-std-cast-call")
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -fuse-ld=lld")
     #string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")

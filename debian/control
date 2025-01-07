@@ -1,7 +1,7 @@
 Source: notes-tree
 Section: editors
 Priority: optional
-Maintainer: Dmitry Sviridov <dmitry.sviridov@gmail.com>
+Maintainer: --
 Build-Depends: cmake, qt6-base-dev, libqt6svg6-dev, debhelper-compat (= 13)
 Standards-Version: 4.5.1
 Homepage: https://gitlab.com/44100Hz/NotesTree

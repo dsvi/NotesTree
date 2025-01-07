@@ -105,7 +105,7 @@ void NotesTree::root(Note *root)
 		});
 	}
 	{
-		QAction *search = 		app->addToolButton(this, ui.toolBoxLayout, ":/ico/search");
+		QAction *search = app->addToolButton(this, ui.toolBoxLayout, ":/ico/search");
 		search->setToolTip(tr("Filter notes"));
 		search->setShortcut(QKeySequence(+Qt::SHIFT + +Qt::Key_F));
 		//search->setShortcut(QKeySequence::Find);

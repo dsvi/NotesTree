@@ -22,4 +22,4 @@ Or you can run `make-deb` to build a deb package. You will need `build-essential
 
 ## Other
  
-...or build it yourself. You'll need qt5 or qt6 installed.
+...or build it yourself. You'll need qt6 installed.

@@ -22,7 +22,7 @@ App::App(QObject *parent) : QObject(parent)
 
 static
 int getIconSize(){
-	auto fm = QApplication::fontMetrics();
+	auto fm = QFontMetricsF(QApplication::font());
 	auto size = fm.height();
 	return size * 1.2;
 }

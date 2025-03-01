@@ -8,7 +8,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 # TODO: fix version also in debian/changelog
-project(NotesTree VERSION 1.2.1 LANGUAGES CXX)
+project(NotesTree VERSION 1.2.2 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -30,6 +30,7 @@ endif()
 option(NOTES_STATIC_BUILD "Try to build static version of the program, without dependency on any shared library." OFF)
 
 if (NOTES_STATIC_BUILD)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++ -static-libgcc")
 endif()
 
@@ -88,9 +89,7 @@ target_link_libraries(NotesTree PRIVATE
 )
 
 if (NOTES_STATIC_BUILD)
-    target_link_libraries(NotesTree PRIVATE 
-        Qt${QT_VERSION_MAJOR}::WaylandClientPrivate
-    )
+    target_link_libraries(NotesTree PRIVATE libexpat.a libbrotlicommon.a libz.a libbz2.a)
 endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

@@ -8,7 +8,7 @@ public:
 	ByteArraySerializer(QByteArray *ba): ba_(ba){};
 	template<typename T>
 	ByteArraySerializer add(T t){
-		static_assert(std::is_pod<T>::value, "only for pods");
+		static_assert(std::is_standard_layout<T>::value && std::is_trivial<T>::value, "only for pods");
 		ba_->append(reinterpret_cast<const char *>(&t), sizeof(T));
 		return *this;
 	}
@@ -23,7 +23,7 @@ public:
 	// doesn't do any validity check on serilized data
 	template<typename T>
 	ByteArrayDeSerializer get(T &t){
-		static_assert(std::is_pod<T>::value, "only for pods");
+		static_assert(std::is_standard_layout<T>::value && std::is_trivial<T>::value, "only for pods");
 		char *dst = reinterpret_cast<char*>(&t);
 		const char *src = ba_->data() + ndx_;
 		ASSERT(ba_->size() >= ndx_ + (int) sizeof(T));

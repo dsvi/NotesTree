@@ -12,8 +12,6 @@ What makes it different?
 
 # Getting it
 
-## AppImage
-
 You can get the wayland only x86-64 binary at the releases section.
 
 ## DEB

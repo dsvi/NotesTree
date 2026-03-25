@@ -8,7 +8,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 # TODO: fix version also in debian/changelog
-project(NotesTree VERSION 1.2.2 LANGUAGES CXX)
+project(NotesTree VERSION 1.2.3 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)

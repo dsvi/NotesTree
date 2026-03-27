@@ -6,7 +6,6 @@ class Note : public QObject
 {
 	Q_OBJECT
 public:
-	/// addSubnotesDir() or addTextFile() should be called for it to be valid
 	Note();
 	~Note();
 	QString name() const;
@@ -65,12 +64,15 @@ private:
 	std::vector<std::shared_ptr<Note>> subNotes_;
 	std::set<QString>                  urlsInDownload_;
 	std::set<std::filesystem::path>    validEmbeds_;
-
-	/// populate list of subnotes and the name from the @path dir
+	
+	/// addSubnotesDir() or addTextFile() should be called for it to be valid
+	std::shared_ptr<Note> createSub();
+	/// populate list of subnotes and the name from the @path dir.
 	void addSubnotesDir(const std::filesystem::path &path);
 	/// pathname should end on textExt
 	void addTextFile(const std::filesystem::path &textPathname);
-
+	
+	
 	void move(const std::filesystem::path &newPath, const std::filesystem::path &newFileName);
 	void adopt_(const std::shared_ptr<Note> &n);
 	void cleanUpFileSystem();
@@ -149,8 +151,6 @@ const Note *Note::child(size_t ndx) const
 {
 	return subNotes_[ndx].get();
 }
-
-
 
 
 #endif // NOTE_H

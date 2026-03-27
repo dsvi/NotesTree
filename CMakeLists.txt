@@ -75,6 +75,7 @@ set(PROJECT_SOURCES
     src/NotesTree.ui
 )
 
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 qt_add_executable(NotesTree
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}

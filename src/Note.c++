@@ -14,6 +14,13 @@ Note::~Note()
 {
 }
 
+std::shared_ptr<Note> Note::createSub()
+{
+	auto n = make_shared<Note>();
+	n->parent_ = this;
+	return n;
+}
+
 bool Note::hasAttach()
 {
 	if (parent_)
@@ -32,7 +39,7 @@ QString Note::decodeFromFilename(const std::filesystem::path &filename)
 			for (int i = 2; --i >= 0;){
 				if (++c == fn.end()){
 					throw Exception(QCoreApplication::translate(
-						"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
+						"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar, fn));
 				}
 				num += *c;
 			}
@@ -40,7 +47,7 @@ QString Note::decodeFromFilename(const std::filesystem::path &filename)
 			int code = num.toInt(&ok, 16);
 			if (!ok){
 				throw Exception(QCoreApplication::translate(
-					"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar).arg(fn));
+					"Filesystem", "Wrong num after delimiter %1 in file name: %2").arg(delimChar, fn));
 			}
 			ret += QChar(code);
 		}
@@ -75,8 +82,10 @@ std::filesystem::path Note::encodeToFilename(const QString &name)
 
 void Note::addSubnotesDir(const std::filesystem::path &path)
 {
-	if (name_.isNull())
+	if (name_.isNull()){
+		ASSERT(parent_ != nullptr);
 		name_ = decodeFromFilename(path.filename());
+	}
 
 	std::unordered_map<QString, class path> dirs;
 	for (auto&& x : directory_iterator(path))
@@ -90,7 +99,7 @@ void Note::addSubnotesDir(const std::filesystem::path &path)
 			app->reportErrorMsg(tr("Unexpected file '%1'").arg(fi.path().c_str()));		
 			continue;
 		}
-		auto subNote = make_shared<Note>();
+		auto subNote = createSub();
 		subNote->addTextFile(fi.path());
 		addNote(subNote);
 		class path subDir = subNote->subNotesDir();
@@ -107,21 +116,16 @@ void Note::addSubnotesDir(const std::filesystem::path &path)
 			++dir;
 			continue;
 		}
-		auto subNote = make_shared<Note>();
+		auto subNote = createSub();
 		subNote->addSubnotesDir(dirPath);
-		addNote(subNote);
+		addNote(subNote);	
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + attachExt)));
 		dirs.erase(toQS(encodeToFilename(subNote->name_ + embedExt)));
 		dir = dirs.erase(dir);
 	}
-	// just in case we happened to have a note name ending on attachExt etc
-	// kinda stupid part
 	for (auto &dir : dirs){
 		const std::filesystem::path &dirPath = dir.second;
-		auto subNote = make_shared<Note>();
-		subNote->name_ = decodeFromFilename(dirPath.filename());
-		addNote(subNote);
-		subNote->addSubnotesDir(dirPath);
+		app->reportErrorMsg(tr("Unexpected directory '%1'").arg(dirPath.c_str()));	
 	}
 }
 
@@ -304,8 +308,7 @@ void Note::createSubnote(const QString &name)
 			throw RecoverableException(
 				tr("Note '%1' already exist here.\n").arg(name));
 		ensureSubDirExist();
-		auto subNote = make_shared<Note>();
-		subNote->parent_ = this;
+		auto subNote = createSub();
 		subNote->name_ = name;
 		auto txtPath = subNote->textPathname();
 		if (exists(txtPath))
@@ -413,7 +416,7 @@ void Note::downloaded(const QString &originalUrl, const QByteArray &content, con
 			throw RecoverableException(tr(
 				"Can't download embedded file for '%1'\n"
 				"url: %2\n"
-				"problem: %3").arg(name_).arg(originalUrl).arg(error));
+				"problem: %3").arg(name_).arg(originalUrl, error));
 		}
 		QString embedUrl;
 		{

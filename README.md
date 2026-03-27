@@ -12,7 +12,7 @@ What makes it different?
 
 # Getting it
 
-You can get the wayland only x86-64 binary at the releases section.
+You can get the wayland only binary at the releases section. Should be compatible with most modern distros.
 
 ## DEB
 

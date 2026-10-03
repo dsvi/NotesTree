@@ -27,6 +27,11 @@
 # brotli are rebuilt from source without LTO, and OpenSSL and D-Bus (no
 # -static package exists for either) are built from source static-only.
 #
+# In addition to the bare binary, an AppImage of it is produced for
+# every architecture (the AppImage runtime is built from source here, so
+# there is no x86_64/aarch64-only prebuilt binary to depend on) - see the
+# AppImage sections at the end.
+#
 # Usage:  ./docker-build.sh [extra docker build args, e.g. --platform linux/arm64]
 
 FROM alpine:3.21
@@ -57,6 +62,7 @@ RUN apk add --no-cache \
         pkgconf \
         file \
         util-linux \
+        squashfs-tools \
         libffi-dev \
         freetype-dev freetype-static \
         fontconfig-dev fontconfig-static \
@@ -66,7 +72,13 @@ RUN apk add --no-cache \
         expat-dev expat-static \
         zlib-dev zlib-static \
         bzip2-dev bzip2-static \
-        libpng-dev libpng-static
+        libpng-dev libpng-static \
+        clang \
+        mimalloc-dev \
+        zstd-dev zstd-static \
+        autoconf automake libtool \
+        patch \
+        eudev-dev gettext-dev linux-headers
 
 # ---------------------------------------------------------------------------
 # brotli 1.1.0, static, from source.
@@ -228,6 +240,56 @@ RUN cmake -B qtsvg-build -S qtsvg -GNinja \
 RUN cmake --install qtsvg-build
 
 # ---------------------------------------------------------------------------
+# AppImage runtime, built from source (github.com/AppImage/type2-runtime).
+#
+# Upstream only ships prebuilt runtimes (and the appimagetool binary)
+# for x86_64 and aarch64, so instead of downloading them and skipping
+# other architectures, the runtime is built here - native, so riscv64
+# works under qemu too - and the AppImage is assembled by hand: the
+# format is literally the runtime binary followed by a squashfs image
+# (see the AppImage section at the end).
+#
+# The runtime is a single C file, but it statically links libfuse3 and
+# squashfuse so the target system needs no libfuse (just the usual
+# fusermount3 helper and /dev/fuse; on a system without FUSE the user
+# runs the AppImage with --appimage-extract). That is why libfuse and
+# squashfuse are built from source here: the runtime needs their static
+# archives, and libfuse needs the upstream mount.c patch (it makes
+# libfuse honour $FUSERMOUNT_PROG, which the runtime sets after finding
+# the helper on its own PATH). The libfuse/squashfuse versions match
+# what type2-runtime's own build scripts pin; the runtime is pinned to
+# a commit.
+RUN curl -fsSLO --retry 5 --retry-all-errors --retry-delay 2 \
+        https://github.com/libfuse/libfuse/releases/download/fuse-3.15.0/fuse-3.15.0.tar.xz \
+ && tar xJ -C /tmp -f fuse-3.15.0.tar.xz \
+ && cd /tmp/fuse-3.15.0 \
+ && curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 -o /tmp/mount.c.diff \
+        https://raw.githubusercontent.com/AppImage/type2-runtime/main/patches/libfuse/mount.c.diff \
+ && patch -p1 < /tmp/mount.c.diff \
+ && meson setup --prefix=/usr --default-library=static build \
+ && ninja -C build install
+
+RUN curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
+        -o /tmp/squashfuse.tar.gz https://github.com/vasi/squashfuse/archive/0.5.2.tar.gz \
+ && tar xz -C /tmp -f /tmp/squashfuse.tar.gz \
+ && cd /tmp/squashfuse-0.5.2 \
+ && ./autogen.sh \
+ && ./configure LDFLAGS=-static \
+ && make -j"$(nproc)" \
+ && make install \
+ && install -c -m 644 ./*.h /usr/local/include/squashfuse
+
+RUN curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
+        -o /tmp/type2-runtime.tar.gz \
+        https://github.com/AppImage/type2-runtime/archive/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa.tar.gz \
+ && tar xz -C /tmp -f /tmp/type2-runtime.tar.gz \
+ && cd /tmp/type2-runtime-*/src/runtime \
+ && make -j"$(nproc)" runtime \
+ && strip runtime \
+ && echo -ne 'AI\x02' | dd of=runtime bs=1 count=3 seek=8 conv=notrunc \
+ && file runtime
+
+# ---------------------------------------------------------------------------
 # NotesTree itself. NOTES_STATIC_BUILD adds -static to the final link
 # (see CMakeLists.txt): no interpreter, no dynamic section at all.
 #
@@ -251,3 +313,39 @@ RUN cmake -B build -S . -GNinja \
  && (strings build/NotesTree | grep -E "libEGL|libGLESv2|libgbm|libdrm\.|libwayland-egl|libxkbcommon\.so|libssl\.so|libcrypto\.so|libfontconfig\.so|libdbus-1\.so" || echo "no dynamic-library strings") \
  && (strings build/NotesTree | grep -oE "org\.kde\.[A-Za-z0-9]+" | sort -u || true) \
  && (strings build/NotesTree | grep -q kdeglobals && echo "KDE theme support linked in")
+
+# ---------------------------------------------------------------------------
+# AppImage of the fully static binary.
+#
+# The binary needs nothing at runtime, so the AppDir is trivial: the
+# executable, the desktop file, the icon and an AppRun symlink to the
+# executable - there are no shared libraries to bundle (that is what
+# linuxdeploy in the old make-appimage script was for; nothing to bundle
+# here). The AppImage is then just the runtime built above followed by
+# the squashfs of the AppDir - what appimagetool does, minus the tool
+# download and its x86_64/aarch64-only binaries. The squashfs flags are
+# appimagetool's (zstd, 128 KiB blocks, all-root, and -noappend so the
+# superblock starts exactly where the runtime expects it).
+#
+# The icon must sit at the AppDir root (the spec's lookup order); the
+# hicolor copy and the .DirIcon symlink are for desktop-integration
+# tools on the user's side. AppRun is just a symlink to the binary: the
+# runtime execs AppRun with the AppDir mounted, the binary is fully
+# self-contained, so a wrapper script would add nothing (a script would
+# only be needed to set up the environment for bundled libraries -
+# there are none).
+#
+# The output is a fixed name, build/NotesTree.appimage (no arch/version
+# in it): docker-build.sh copies it out as-is and CI/release.sh renames
+# it per platform.
+RUN mkdir -p AppDir/usr/bin AppDir/usr/share/icons/hicolor/scalable/apps \
+ && cp build/NotesTree AppDir/usr/bin/NotesTree \
+ && cp NotesTree.desktop AppDir/NotesTree.desktop \
+ && cp NotesTree.svg AppDir/NotesTree.svg \
+ && cp NotesTree.svg AppDir/usr/share/icons/hicolor/scalable/apps/NotesTree.svg \
+ && ln -s usr/bin/NotesTree AppDir/AppRun \
+ && ln -s NotesTree.svg AppDir/.DirIcon \
+ && mksquashfs AppDir /tmp/squashfs.img -noappend -all-root -comp zstd -b 131072 \
+ && cat /tmp/type2-runtime-*/src/runtime/runtime /tmp/squashfs.img > build/NotesTree.appimage \
+ && chmod +x build/NotesTree.appimage \
+ && file build/NotesTree.appimage

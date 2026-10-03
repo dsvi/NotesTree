@@ -12,8 +12,8 @@ What makes it different?
 
 # Getting it
 
-You can get the wayland only binary at the releases section. Should be compatible with most modern distros.
+You can get the wayland only AppImage for x86-64, arm64 and riscv64 at the releases section.
 
-## Other
- 
-...or build it yourself. You'll need Qt 6.12 or newer installed.
+Or build it yourself.
+
+The docker build (`./docker-build.sh`) needs nothing but docker: it builds a fully static musl binary (plus an AppImage of it) for the host architecture.

@@ -7,6 +7,7 @@ docker build --tag notestree-build ${1:-} .
 mkdir docker-build-out
 id=$(docker create notestree-build)
 docker cp $id:/src/build/NotesTree docker-build-out/
+docker cp $id:/src/build/NotesTree.appimage docker-build-out/
 docker rm $id
 docker image rm notestree-build
 
@@ -22,3 +23,4 @@ echo -e "interpreter - it runs on any x86-64 Linux, glibc or musl."
 echo -e "It is static, Wayland only and software rendered - no OpenGL/EGL/mesa."
 echo -e "D-Bus is linked in, so it picks up the KDE/Plasma theme."
 echo -e "At runtime it needs a wayland compositor, nothing else."
+echo -e "There is also a NotesTree.appimage in the output folder."

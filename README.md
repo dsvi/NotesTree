@@ -14,10 +14,6 @@ What makes it different?
 
 You can get the wayland only binary at the releases section. Should be compatible with most modern distros.
 
-## DEB
-
-Or you can run `make-deb` to build a deb package. You will need `build-essential` and `devscripts` packages installed.
-
 ## Other
  
-...or build it yourself. You'll need qt6 installed.
+...or build it yourself. You'll need Qt 6.12 or newer installed.

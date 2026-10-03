@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 # Set the default CMAKE_BUILD_TYPE to Release.
 # This should be done before the project command since the latter can set
@@ -7,7 +7,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif ()
 
-# TODO: fix version also in debian/changelog
 project(NotesTree VERSION 1.2.3 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
@@ -27,17 +26,35 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     #string(APPEND CMAKE_CXX_FLAGS_DEBUG " -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
 endif()
 
-option(NOTES_STATIC_BUILD "Try to build static version of the program, without dependency on any shared library." OFF)
+option(NOTES_STATIC_BUILD "Build a fully static version of the program: no dependency on any shared library. Requires the static libc parts (libc.a, crt objects) to be installed." OFF)
 
 if (NOTES_STATIC_BUILD)
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-    string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++ -static-libgcc")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        # clang + libc++ (e.g. an Alpine/musl build): static C++ runtime and
+        # libc. -Wl,-Bdynamic at the end lets the few unavoidable shared
+        # libraries resolve to .so. The docker build uses gcc instead (the
+        # else branch).
+        string(APPEND CMAKE_CXX_FLAGS " -stdlib=libc++")
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,-Bstatic -lc++ -lc++abi -lc -Wl,-Bdynamic")
+    else ()
+        # -static: link everything statically, including libc, libstdc++
+        # and the dynamic loader, so the binary has no shared-library
+        # dependencies at all. The Qt build in the docker image is made for
+        # this: it is built with BUILD_SHARED_LIBS=OFF and all third-party
+        # deps (zlib, freetype, fontconfig, dbus, ...) are static archives.
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " -static")
+    endif()
 endif()
 
 # otherwise cmake --install tries to install all the dependeencies
 install(CODE "set(CMAKE_INSTALL_LOCAL_ONLY true)")
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Xml Svg Network)
+# The wayland client (the WaylandClient module and the
+# QWaylandIntegrationPlugin platform plugin) is part of qtbase, and Qt's
+# CMake package auto-links the default static plugins (see the
+# NOTES_STATIC_BUILD block below).
+find_package(Qt6 6.12 REQUIRED COMPONENTS Widgets Xml Svg Network)
 
 set(PROJECT_SOURCES
     src/precomp.h
@@ -76,34 +93,63 @@ set(PROJECT_SOURCES
 )
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-qt_add_executable(NotesTree
-    MANUAL_FINALIZATION
-    ${PROJECT_SOURCES}
-)
+qt_add_executable(NotesTree ${PROJECT_SOURCES})
 target_include_directories(NotesTree PRIVATE src)
 target_precompile_headers(NotesTree PRIVATE src/precomp.h)
-target_link_libraries(NotesTree PRIVATE 
-    Qt${QT_VERSION_MAJOR}::Widgets 
-    Qt${QT_VERSION_MAJOR}::Xml 
-    Qt${QT_VERSION_MAJOR}::Svg 
-    Qt${QT_VERSION_MAJOR}::Network
+target_link_libraries(NotesTree PRIVATE
+    Qt6::Widgets
+    Qt6::Xml
+    Qt6::Svg
+    Qt6::Network
 )
 
 if (NOTES_STATIC_BUILD)
-    target_link_libraries(NotesTree PRIVATE libexpat.a libbrotlicommon.a libz.a libbz2.a)
+    # With a static Qt the plugins that would normally be dlopen()ed are
+    # linked in automatically by Qt's own CMake package: find_package(Qt6)
+    # pulls in the plugin targets belonging to every module that is linked,
+    # and linking those modules links the "default" plugins - the platform
+    # plugin selected by QT_QPA_PLATFORMS when Qt was built (wayland,
+    # software rendered: the docker build compiles OpenGL/EGL out, so the
+    # wayland_egl path does not exist), the OpenSSL TLS backend, the
+    # imageformats (jpeg, gif, ...) and the svg plugins - together with
+    # their Q_IMPORT_PLUGIN initialization stubs. qt_import_plugins() is
+    # only needed to override that default set (INCLUDE_BY_TYPE, EXCLUDE,
+    # ...), which we don't need.
+    #
+    # Qt's CMake package already references the static archives of every
+    # system library it found (freetype, harfbuzz, fontconfig, xkbcommon,
+    # wayland, dbus-1, zlib, ...), but two things are missing from that:
+    #
+    # 1. The *private* dependencies of those libraries: Qt's own
+    #    pkg-config lookups run without --static, so Requires.private
+    #    entries never reach the link line. The archives missing because
+    #    of that are the leaves of the dependency chains:
+    #      graphite2         Alpine's harfbuzz is built with the graphite2
+    #                        shaper, so libharfbuzz.a references gr_*
+    #      brotlidec/common  FreeType's WOFF2 support
+    #      libffi            the wayland client's closure marshalling
+    #      expat             D-Bus's XML parser
+    # 2. Link-order insurance: the linker scans archives in a single
+    #    left-to-right pass, so providers must come after their
+    #    consumers; the order inside Qt's interface libraries is not
+    #    guaranteed (harfbuzz needs freetype, freetype needs
+    #    zlib/bzip2/libpng/brotli).
+    #
+    # Both are covered by appending the whole provider set - in
+    # topological order, consumers first - via pkg-config: the .pc files
+    # provide the names and paths, and the docker image deletes the .so
+    # symlinks, so every -l flag resolves to the archive. Archives whose
+    # members were already pulled earlier on the line contribute
+    # nothing, so the duplicates are harmless. Letting pkg-config resolve
+    # the chains itself (pkg_check_modules STATIC) is deliberately not
+    # done: harfbuzz's private deps would then drag in glib/intl/pcre2,
+    # which nothing here links.
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(NOTES_DEPS REQUIRED IMPORTED_TARGET
+        fontconfig harfbuzz graphite2 freetype2 libbrotlidec
+        libbrotlicommon libpng bzip2 zlib expat libffi)
+    target_link_libraries(NotesTree PRIVATE PkgConfig::NOTES_DEPS)
 endif()
-
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
-set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER org.ds.NotesTree)
-set_target_properties(NotesTree PROPERTIES
-    ${BUNDLE_ID_OPTION}
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
 
 include(GNUInstallDirs)
 install(TARGETS NotesTree
@@ -118,7 +164,3 @@ install(FILES
 install(FILES
     NotesTree.svg     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps
 )
-
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(NotesTree)
-endif()

@@ -10,10 +10,13 @@ What makes it different?
 
 ![screenshot](screenshot.png) 
 
-# Getting it
+## Getting it
 
 You can get the wayland only AppImage for x86-64, arm64 and riscv64 at the releases section.
 
-Or build it yourself.
+Or launch `./user-install.sh` it will build it inside `docker` and install everything for the current user (no root needed): the binary into `~/.local/bin`, the desktop entry into `~/.local/share/applications` and the icon into `~/.local/share/icons` - Notes Tree then shows up in your application launcher. To uninstall, pick "Uninstall" in the app's launcher menu (or delete those three files).
 
 The docker build (`./docker-build.sh`) needs nothing but docker: it builds a fully static musl binary (plus an AppImage of it) for the host architecture.
+
+
+

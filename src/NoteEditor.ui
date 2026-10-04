@@ -62,10 +62,17 @@
     </widget>
    </item>
    <item>
-    <widget class="QTextEdit" name="noteEdit"/>
+    <widget class="ColorStrippingTextEdit" name="noteEdit"/>
    </item>
   </layout>
  </widget>
  <resources/>
  <connections/>
+ <customwidgets>
+  <customwidget>
+   <class>ColorStrippingTextEdit</class>
+   <extends>QTextEdit</extends>
+   <header>ColorStrippingTextEdit.h</header>
+  </customwidget>
+ </customwidgets>
 </ui>

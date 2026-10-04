@@ -64,12 +64,16 @@ set(PROJECT_SOURCES
     src/App.c++
     src/App.h
     src/ByteArraySerializer.h
+    src/ColorStrippingTextEdit.c++
+    src/ColorStrippingTextEdit.h
     src/Config.c++
     src/Config.h
     src/Downloader.c++
     src/Downloader.h
     src/Exceptions.c++
     src/Exceptions.h
+    src/HtmlColorStripper.c++
+    src/HtmlColorStripper.h
     src/MainWindow.c++
     src/MainWindow.h
     src/Note.c++
@@ -164,3 +168,11 @@ install(FILES
 install(FILES
     NotesTree.svg     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps
 )
+
+# The tests only need QtCore and QtTest; see tests/CMakeLists.txt, which can
+# also be configured on its own without the app.
+option(NOTES_BUILD_TESTS "Build the unit tests." OFF)
+if (NOTES_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

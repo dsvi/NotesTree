@@ -2,12 +2,12 @@
 
 set -e
 
-rm -rf docker-build-out
+rm -rf build-out
 docker build --tag notestree-build ${1:-} .
-mkdir docker-build-out
+mkdir build-out
 id=$(docker create notestree-build)
-docker cp $id:/src/build/NotesTree docker-build-out/
-docker cp $id:/src/build/NotesTree.appimage docker-build-out/
+docker cp $id:/src/build/NotesTree build-out/
+docker cp $id:/src/build/NotesTree.appimage build-out/
 docker rm $id
 docker image rm notestree-build
 
@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 echo
 echo  =^..^=   =^..^=   =^..^=    =^..^=    =^..^=    =^..^=    =^..^=    =^..^=    =^..^=
 echo
-echo -e Output is at ${HI}./docker-build-out${NC} folder.
+echo -e Output is at ${HI}./build-out${NC} folder.
 echo -e "The build is FULLY static (musl): no shared libraries, no libc, no"
 echo -e "interpreter - it runs on any x86-64 Linux, glibc or musl."
 echo -e "It is static, Wayland only and software rendered - no OpenGL/EGL/mesa."

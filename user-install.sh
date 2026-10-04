@@ -36,7 +36,7 @@ rm -rf "$tmp"
 Actions=Uninstall;
 
 [Desktop Action Uninstall]
-Name=Uninstall Notes Tree
+Name=Uninstall
 Exec=sh -c "rm -f $BIN_DIR/NotesTree $DESKTOP_DIR/NotesTree.desktop $ICON_DIR/NotesTree.svg; update-desktop-database $DESKTOP_DIR 2>/dev/null; gtk-update-icon-cache $HOME/.local/share/icons/hicolor 2>/dev/null; true"
 EOF
 } > "$DESKTOP_DIR/NotesTree.desktop"

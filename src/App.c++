@@ -1,5 +1,7 @@
 ﻿#include "App.h"
 
+#include "KdeLookStyle.h"
+
 using namespace std;
 
 App *app;
@@ -23,6 +25,22 @@ int getIconSize(){
 	auto fm = QFontMetricsF(QApplication::font());
 	auto size = fm.height();
 	return size * 1.2;
+}
+
+/// Recolours a flat icon. The SVG glyphs are a single solid colour, so keeping
+/// their alpha and replacing their RGB is an exact recolour, antialiasing and
+/// all.
+static QPixmap tintedPixmap(const QPixmap &src, const QColor &color)
+{
+	QPixmap out(src.size());
+	out.setDevicePixelRatio(src.devicePixelRatioF());
+	out.fill(Qt::transparent);
+	QPainter p(&out);
+	p.drawPixmap(0, 0, src);
+	p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+	p.fillRect(out.rect(), color);
+	p.end();
+	return out;
 }
 
 QIcon App::themedSVGIcon(QString icon, float scale)
@@ -51,7 +69,25 @@ QIcon App::themedSVGIcon(QString icon, float scale)
 	QPainter pixPainter(&pix);
 	// use renderer to render over painter which paints on pixmap
 	svgRenderer.render(&pixPainter);
-	return QIcon(pix);
+	pixPainter.end();
+
+	QIcon result(pix);
+	// Qt's tool buttons ask for QIcon::Active while the cursor is over an
+	// auto-raise button (QCommonStyle CE_ToolButtonLabel; Breeze uses the same
+	// rule), so give the icon an accent-coloured variant for that state.
+	// Disabled buttons ask for QIcon::Disabled. Without a variant Qt synthesises
+	// one in QCommonStyle::generatedIconPixmap, which ramps the glyph towards
+	// Disabled|Window and leaves it near-white (#d7d9dc on this palette). Breeze
+	// instead recolours the SVG with the palette's disabled text colour, so do
+	// the same; the accent never leaks into a disabled button because
+	// State_Enabled is tested before State_MouseOver.
+	const QColor accent = KdeLookStyle::hoverColor(QApplication::palette());
+	if (accent.isValid() && accent != c)
+		result.addPixmap(tintedPixmap(pix, accent), QIcon::Active, QIcon::Off);
+	const QColor disabled = QApplication::palette().color(QPalette::Disabled, QPalette::Text);
+	if (disabled.isValid() && disabled != c)
+		result.addPixmap(tintedPixmap(pix, disabled), QIcon::Disabled, QIcon::Off);
+	return result;
 }
 
 QAction *App::addToolButton(QWidget *parent, QLayout *l, QIcon icon)

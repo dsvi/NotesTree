@@ -74,6 +74,8 @@ set(PROJECT_SOURCES
     src/Exceptions.h
     src/HtmlColorStripper.c++
     src/HtmlColorStripper.h
+    src/KdeLookStyle.c++
+    src/KdeLookStyle.h
     src/MainWindow.c++
     src/MainWindow.h
     src/Note.c++

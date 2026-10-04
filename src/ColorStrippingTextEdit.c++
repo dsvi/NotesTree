@@ -7,6 +7,16 @@
 void ColorStrippingTextEdit::insertFromMimeData(const QMimeData *source)
 {
 	if (!source || !source->hasHtml()){
+		// a bare image on the clipboard (a screenshot) can't live in the
+		// document on its own: hand it over to the note, which stores it in
+		// the embed dir and inserts a reference back.
+		if (source && source->hasImage()){
+			auto img = qvariant_cast<QImage>(source->imageData());
+			if (!img.isNull()){
+				emit imagePasted(img);
+				return;
+			}
+		}
 		QTextEdit::insertFromMimeData(source);
 		return;
 	}

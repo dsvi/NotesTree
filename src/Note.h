@@ -21,6 +21,9 @@ signals:
 	void attachReady(const QString &attachDirPath);
 	void pathsReady(const std::vector<QString> &paths);
 	void updateUrl(QString from, QString to);
+	/// emitted back to the editor after pasteImage() stored the image;
+	/// the editor inserts the html at the current cursor
+	void insertHtml(const QString &html);
 public slots:
 
 	/// create hierarchy of notes and subnotes from the root folder
@@ -49,6 +52,10 @@ public slots:
 	/// checks `img` and `source` elements for src and downloads if required.
 	/// than emits updateUrl() for the editor to patch the note text.
 	void handleRefs(QString html);
+
+	/// stores the pasted image as a png in the embed dir and emits
+	/// insertHtml() with a reference to it, so it survives a reload.
+	void pasteImage(const QImage &img);
 	
 	/// creates attach, if did not exist. emits attachReady, if done
 	void attach();
@@ -112,6 +119,10 @@ private:
 	/// also creates embed dir, if it did not exist
 	std::filesystem::path generateEmbedFilename(const std::filesystem::path &hint);
 	void downloaded(const QString &originalUrl, const QByteArray &content, const QString &error);
+
+	/// fills validEmbeds_ with the local embeds referenced in html.
+	/// like handleRefs() but without any downloading; used by save()
+	void collectEmbeds(const QString &html);
 
 	QString loadTxt();
 	void saveTxt(const QString &txt);

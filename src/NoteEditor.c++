@@ -344,6 +344,8 @@ void NoteEditor::editTextFor(std::weak_ptr<Note> wn)
 	connectionsToNote_.push_back(connect(this, &NoteEditor::saveTxt, n, &Note::save));
 	connectionsToNote_.push_back(connect(this, &NoteEditor::handleRefs, n, &Note::handleRefs));
 	connectionsToNote_.push_back(connect(n, &Note::updateUrl, this, &NoteEditor::updateUrl));
+	connectionsToNote_.push_back(connect(ui.noteEdit, &ColorStrippingTextEdit::imagePasted, n, &Note::pasteImage));
+	connectionsToNote_.push_back(connect(n, &Note::insertHtml, this, &NoteEditor::insertHtml));
 	
 	//ui.noteEdit->textCursor().insertImage(":/ico/NotesTree");
 	emit startEditingTxt();
@@ -379,15 +381,40 @@ void NoteEditor::changed()
 
 void NoteEditor::updateUrl(QString from, QString to)
 {
-	auto edit = ui.noteEdit;
-	auto html = edit->toHtml();
-	auto newHtml = VisitSrcUrls(html, [=](QDomElement e){
-		auto url = e.attribute("src");
-		if (url == from)
-			e.setAttribute("src", to);
-	});
-	edit->setHtml(newHtml);
-	changed();
+	auto doc = ui.noteEdit->document();
+	struct Hit{ int pos; int len; QTextImageFormat fmt; };
+	vector<Hit> hits;
+	for (auto blk = doc->begin(); blk != doc->end(); blk = blk.next()){
+		for (auto it = blk.begin(); !it.atEnd(); ++it){
+			auto frag = it.fragment();
+			auto fmt = frag.charFormat();
+			if (!fmt.isImageFormat() || fmt.toImageFormat().name() != from)
+				continue;
+			hits.push_back({frag.position(), frag.length(), fmt.toImageFormat()});
+		}
+	}
+	if (hits.empty())
+		return; // the editor doesn't reference that url (anymore). nothing to do,
+	            // and importantly no changed()/handleRefs() round trip that would
+	            // re-download it
+	QTextCursor c(doc);
+	c.beginEditBlock();
+	for (auto &h : hits){
+		h.fmt.setName(to);
+		c.setPosition(h.pos);
+		c.setPosition(h.pos + h.len, QTextCursor::KeepAnchor);
+		// replacing the object replacement char keeps the text length, so the
+		// positions collected above stay valid
+		c.insertText(QString(QChar::ObjectReplacementCharacter), h.fmt);
+	}
+	c.endEditBlock();
+	// contentsChanged -> changed() fires from insertText(); no explicit call.
+	// unlike setHtml(), the caret, the scroll and the undo history survive.
+}
+
+void NoteEditor::insertHtml(const QString &html)
+{
+	ui.noteEdit->insertHtml(html);
 }
 
 
@@ -409,7 +436,10 @@ void NoteEditor::save()
 QString VisitSrcUrls(QString html, std::function<void(QDomElement)> &&f)
 {
 	QDomDocument doc;
-	doc.setContent(html);
+	if (!doc.setContent(html))
+		return html; // unparseable input: hand it back untouched. doc.toString(0)
+	                 // would be empty, and callers would blank the editor or
+	                 // truncate the saved note file.
 	vector<QDomElement> list;
 	for (auto tag: {"img", "source"}){
 		auto l = doc.elementsByTagName(tag);

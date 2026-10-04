@@ -25,6 +25,7 @@ public slots:
 	void changed();
 
 	void updateUrl(QString from, QString to);
+	void insertHtml(const QString &html);
 private:
 	Ui::NoteEditor ui;
 	std::vector<QMetaObject::Connection> connectionsToNote_;

@@ -489,7 +489,8 @@ void Note::save(QString html)
 {
 	try{
 		saveTxt(html);
-		handleRefs(html); // to get validEmbeds_
+		collectEmbeds(html); // to get validEmbeds_; deliberately not handleRefs():
+		                     // saving must never kick off downloads
 		if (exists(embedDir())){
 			for (auto&& ef : directory_iterator(embedDir())){ // remove unused embeds
 				if (validEmbeds_.find(ef.path().filename()) == validEmbeds_.end())
@@ -549,7 +550,12 @@ void Note::handleRefs(QString html)
 			u = QUrl::fromPercentEncoding(u.toUtf8());
 			auto srcPath = toPath(u);
 			path dstPath = generateEmbedFilename(srcPath);
-			copy_file(srcPath,dstPath);
+			error_code ec;
+			copy_file(srcPath, dstPath, ec);
+			if (ec){
+				warning(tr("Can't copy file '%1' into the note: %2").arg(toQS(srcPath), QString::fromStdString(ec.message())));
+				return;
+			}
 			validEmbeds_.insert(dstPath.filename());
 			auto dstUrl = urlEnc("./" + toQS(dstPath.parent_path().filename() / dstPath.filename()));
 			emit updateUrl(url, dstUrl);			
@@ -559,9 +565,45 @@ void Note::handleRefs(QString html)
 			return;
 		auto dlr = app->downloader();
 		connect(dlr, &Downloader::finished, this, &Note::downloaded, Qt::UniqueConnection);
-		dlr->get(url);
+		// the downloader lives on the main thread, this note on the io thread:
+		// the call has to be queued, not direct
+		QMetaObject::invokeMethod(dlr, "get", Qt::QueuedConnection, Q_ARG(QString, url));
 		urlsInDownload_.insert(url);
-	});	
+	});
+}
+
+void Note::collectEmbeds(const QString &html)
+{
+	validEmbeds_.clear();
+	VisitSrcUrls(html, [&](QDomElement e){
+		auto url = e.attribute("src");
+		if (url.isEmpty() || !url.startsWith("."))
+			return;
+		path em = toPath(QUrl::fromPercentEncoding(url.toUtf8()));
+		validEmbeds_.insert(em.filename());
+	});
+}
+
+void Note::pasteImage(const QImage &img)
+{
+	try{
+		if (root()->isZombie())
+			return;
+		QByteArray ba;
+		QBuffer buffer(&ba);
+		buffer.open(QIODevice::WriteOnly);
+		if (!img.save(&buffer, "PNG"))
+			throw RecoverableException(tr("Can't encode the pasted image."));
+		path embed = generateEmbedFilename(path("pasted.png"));
+		fstream out = createOutStream(embed);
+		out.write(ba.data(), ba.size());
+		out.close();
+		auto embedUrl = urlEnc("./" + toQS(embed.parent_path().filename() / embed.filename()));
+		emit insertHtml(QString("<img src=\"%1\">").arg(embedUrl));
+	}
+	catch(...){
+		warning(tr("Can't paste image into note '%1'").arg(name_));
+	}
 }
 
 void Note::attach()

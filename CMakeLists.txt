@@ -54,7 +54,7 @@ install(CODE "set(CMAKE_INSTALL_LOCAL_ONLY true)")
 # QWaylandIntegrationPlugin platform plugin) is part of qtbase, and Qt's
 # CMake package auto-links the default static plugins (see the
 # NOTES_STATIC_BUILD block below).
-find_package(Qt6 6.12 REQUIRED COMPONENTS Widgets Xml Svg Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Xml Svg Network)
 
 set(PROJECT_SOURCES
     src/precomp.h

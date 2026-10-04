@@ -16,8 +16,6 @@ App::App(QObject *parent) : QObject(parent)
 		ioThread_.wait();
 	});
 	ioThread_.start();
-
-	downloader_.moveToThread(&ioThread_);
 }
 
 static

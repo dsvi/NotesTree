@@ -411,7 +411,11 @@ QString urlEnc(const QString &s){
 void Note::downloaded(const QString &originalUrl, const QByteArray &content, const QString &error)
 {
 	try{
+		if ( !urlsInDownload_.contains(originalUrl) )
+			return;
 		urlsInDownload_.erase(originalUrl);
+		if (urlsInDownload_.empty())
+			disconnect(app->downloader(), &Downloader::finished, this, &Note::downloaded);
 		if (!error.isNull()){
 			throw RecoverableException(tr(
 				"Can't download embedded file for '%1'\n"
@@ -556,6 +560,7 @@ void Note::handleRefs(QString html)
 		auto dlr = app->downloader();
 		connect(dlr, &Downloader::finished, this, &Note::downloaded, Qt::UniqueConnection);
 		dlr->get(url);
+		urlsInDownload_.insert(url);
 	});	
 }
 

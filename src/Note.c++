@@ -274,6 +274,7 @@ std::shared_ptr<Note> Note::removeFromParent()
 	auto it = parent_->subNotes_.begin() + myNdx;
 	parent_->subNotes_.erase(it, it+1);
 	parent_->cleanUpFileSystem();
+	parent_ = nullptr;	
 	emit noteRemoved();
 	return ret;
 }
@@ -358,12 +359,7 @@ void Note::deleteSelfRecursively()
 		remove_all(embedDir());
 		//TODO: fsync
 		remove(textPathname());
-		// removeFromParent() hands back the last shared_ptr owning this note.
-		// Keep it alive until the end of the function: without it `this` is
-		// destroyed right there, and the next line (and the catch below)
-		// would read freed memory.
-		auto keepAlive = removeFromParent();
-		parent_->cleanUpFileSystem();
+		removeFromParent();
 	}
 	catch(...){
 		throw Exception(tr("Can't delete note '%1':").arg(name_));
@@ -704,10 +700,12 @@ QString Note::makePathName(const QString separator) const
 	std::stack<const Note*> stack;
 	for (const Note *n = parent_; n != nullptr; n = n->parent_)
 		stack.push(n);
-	stack.pop();
 	QString ret;
 	while (!stack.empty()){
-		ret += stack.top()->name_;
+		if (stack.top()->parent_)
+			ret += stack.top()->name_;
+		else
+			ret += "🌳";
 		stack.pop();
 		if (!stack.empty())
 			ret += separator;

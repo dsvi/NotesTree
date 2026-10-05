@@ -175,7 +175,13 @@ void Note::move(const std::filesystem::path &newPath, const std::filesystem::pat
 void Note::adopt_(const std::shared_ptr<Note> &n)
 {
 	if (n.get() == this)
-		throw Exception(tr("Can't add as subnote to self. (%1)").arg(name_));
+		throw RecoverableException(tr("Can't add as subnote to self. (%1)").arg(name_));
+	// 'this' must not be a subnote of n: that would rename a directory into
+	// itself (EINVAL) and, through error(), wipe the whole in-memory tree.
+	for (Note *p = this; p != nullptr; p = p->parent_)
+		if (p == n.get())
+			throw RecoverableException(
+				tr("Can't add '%1' as a subnote to its own subnote.").arg(n->name_));
 	ensureSubDirExist();
 	n->move(subNotesDir(), encodeToFilename(n->name_));
 	addNote(n->removeFromParent());
@@ -352,7 +358,11 @@ void Note::deleteSelfRecursively()
 		remove_all(embedDir());
 		//TODO: fsync
 		remove(textPathname());
-		removeFromParent();
+		// removeFromParent() hands back the last shared_ptr owning this note.
+		// Keep it alive until the end of the function: without it `this` is
+		// destroyed right there, and the next line (and the catch below)
+		// would read freed memory.
+		auto keepAlive = removeFromParent();
 		parent_->cleanUpFileSystem();
 	}
 	catch(...){

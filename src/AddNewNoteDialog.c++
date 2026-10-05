@@ -15,8 +15,10 @@ void AddNewNoteDialog::hideWhereToAddSelection()
 void AddNewNoteDialog::accept()
 {
 	res_.name = ui.nameEdit->text();
-	if (res_.name.isEmpty())
+	if (res_.name.isEmpty()){
 		QDialog::reject();
+		return;
+	}
 	if (!ui.whereToAddGroup->isHidden())
 		res_.addToRoot = ui.addToRootRB->isChecked();
 	QDialog::accept();

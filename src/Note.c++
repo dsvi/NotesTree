@@ -176,6 +176,8 @@ void Note::adopt_(const std::shared_ptr<Note> &n)
 {
 	if (n.get() == this)
 		throw RecoverableException(tr("Can't add as subnote to self. (%1)").arg(name_));
+	if (n->parent_ == this)
+		return; // already a child here: nothing to move or relink
 	// 'this' must not be a subnote of n: that would rename a directory into
 	// itself (EINVAL) and, through error(), wipe the whole in-memory tree.
 	for (Note *p = this; p != nullptr; p = p->parent_)
@@ -287,6 +289,8 @@ void Note::adopt(const std::vector<std::weak_ptr<Note> > &list)
 			auto n = np.lock();
 			if (!n)
 				continue;
+			if (n->parent_ == this)
+				continue; // already a child here: no-op, not a name clash
 			QString name = n->name_;
 			if (exist(name) || uniquenessCheck.find(name) != uniquenessCheck.end()){
 				auto e = RecoverableException(tr(
@@ -306,6 +310,23 @@ void Note::adopt(const std::vector<std::weak_ptr<Note> > &list)
 	}
 }
 
+static
+fstream createInStream(path &inFilename){  
+	using io = std::ios_base;
+	fstream in(inFilename, io::in | io::binary);
+	in.exceptions(io::failbit | io::badbit);
+	return in;
+}
+
+static 
+fstream createOutStream(std::filesystem::path outFilename)
+{
+	using io = std::ios_base;
+	fstream out(outFilename, io::out | io::trunc | io::binary);
+	out.exceptions(io::failbit | io::badbit);
+	return out;
+}
+
 void Note::createSubnote(const QString &name)
 {
 	if (root()->isZombie())
@@ -321,8 +342,8 @@ void Note::createSubnote(const QString &name)
 		if (exists(txtPath))
 			throw RecoverableException(
 				tr("Filename '%1' already exist.\n").arg(QString::fromStdWString(txtPath.wstring())));
-		std::fstream out(
-			subNote->textPathname(), ios_base::out | ios_base::binary);
+		fstream out = createOutStream(txtPath);
+		out.close();
 		addNote(subNote);
 		cleanUpFileSystem();
 	}
@@ -364,23 +385,6 @@ void Note::deleteSelfRecursively()
 	catch(...){
 		throw Exception(tr("Can't delete note '%1':").arg(name_));
 	}
-}
-
-static
-fstream createInStream(path &inFilename){  
-	using io = std::ios_base;
-	fstream in(inFilename, io::in | io::binary);
-	in.exceptions(io::failbit | io::badbit);
-	return in;
-}
-
-static 
-fstream createOutStream(std::filesystem::path outFilename)
-{
-	using io = std::ios_base;
-	fstream out(outFilename, io::out | io::trunc | io::binary);
-	out.exceptions(io::failbit | io::badbit);
-	return out;
 }
 
 path Note::generateEmbedFilename(const std::filesystem::path &hint)

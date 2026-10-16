@@ -358,7 +358,7 @@ void NoteEditor::noteText(const QString &txt, const QString &basePath)
 	this->setEnabled(true);
 	QString html = txt;
 	auto doc = ui.noteEdit->document();
-	doc->setBaseUrl("file:/" + basePath + "/");
+	doc->setBaseUrl(QUrl::fromLocalFile(basePath + "/"));
 	doc->setHtml(html);
 	// the tables get the palette's colours, and that is not an edit the user
 	// made: it happens before the document is watched, so it does not schedule
@@ -373,6 +373,7 @@ void NoteEditor::stopNoteTracking()
 	emit stopEditingTxt();
 	for (auto &c : connectionsToNote_)
 		disconnect(c);
+	connectionsToNote_.clear();
 	ui.noteEdit->setHtml(QString());
 	this->setEnabled(false);
 }

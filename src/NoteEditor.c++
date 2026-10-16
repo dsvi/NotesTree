@@ -1,5 +1,7 @@
 #include "NoteEditor.h"
 
+#include "NoteTableStyle.h"
+
 using namespace std;
 
 void recursiveVisitAndRemove(QDomNode n, QString tag, const std::function<void(QDomNode)> &action){
@@ -358,6 +360,10 @@ void NoteEditor::noteText(const QString &txt, const QString &basePath)
 	auto doc = ui.noteEdit->document();
 	doc->setBaseUrl("file:/" + basePath + "/");
 	doc->setHtml(html);
+	// the tables get the palette's colours, and that is not an edit the user
+	// made: it happens before the document is watched, so it does not schedule
+	// a save of a note that was only opened
+	ui.noteEdit->restyleTables();
 	connectionsToNote_.push_back(connect(doc, &QTextDocument::contentsChanged, this, &NoteEditor::changed));
 }
 
@@ -429,7 +435,9 @@ void NoteEditor::save()
 	if (txt.isEmpty())
 		emit saveTxt(QString());
 	else
-		emit saveTxt(html);
+		// the table colours are the palette's, not the note's: they must not end
+		// up in the file, where a browser or another theme would get them wrong
+		emit saveTxt(stripTableTheme(html, ui.noteEdit->tableTheme()));
 }
 
 

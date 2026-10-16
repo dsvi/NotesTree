@@ -15,6 +15,10 @@
 #include <QTextBlock>
 #include <QTextCharFormat>
 #include <QTextDocument>
+#include <QTextFrame>
+#include <QTextTable>
+#include <QTextTableCellFormat>
+#include <QTextTableFormat>
 
 #include "ColorStrippingTextEdit.h"
 #include "HtmlColorStripper.h"
@@ -63,6 +67,18 @@ public:
 	void insert(const QMimeData *md){ insertFromMimeData(md); }
 };
 
+/// The last table of the document, or null when it has none.
+QTextTable *lastTable(QTextDocument *doc)
+{
+	QTextTable *table = nullptr;
+	for (auto it = doc->rootFrame()->begin(); !it.atEnd(); ++it){
+		QTextFrame *frame = it.currentFrame();
+		if (frame && frame->format().isTableFormat())
+			table = static_cast<QTextTable *>(frame);
+	}
+	return table;
+}
+
 /// The html the app is given by a program that bakes its light theme into it.
 QString pastedHtml()
 {
@@ -82,6 +98,9 @@ private slots:
 	void clipboardPasteIsStripped();
 	void colorsAlreadyInTheNoteStay();
 	void coloredFixtureHasNoColorsAfterPaste();
+	void pastedTableTakesThePalettesLook();
+	void savedHtmlLosesTheTableColours();
+	void restyledPasteUndoesAsOneStep();
 };
 
 void TestColorStrippingTextEdit::pasteDropsColors()
@@ -199,6 +218,59 @@ void TestColorStrippingTextEdit::coloredFixtureHasNoColorsAfterPaste()
 		// explicit colour, which the check above asks the document itself.
 	}
 	QVERIFY2(checked > 0, "no fixture carries colour that reaches the text: the check is vacuous");
+}
+
+// A table that arrives from the clipboard is painted with the palette right
+// away: the app's table look does not wait for the note to be saved and opened
+// again.
+void TestColorStrippingTextEdit::pastedTableTakesThePalettesLook()
+{
+	Probe edit;
+	edit.setHtml("<p>hello</p>");
+	edit.selectAll();
+	QMimeData md;
+	md.setHtml(R"html(<table><tr>
+<td style="border:3px solid rgb(221,221,221); background-color:rgb(248,249,250)">a</td>
+</tr></table>)html");
+	edit.insert(&md);
+
+	QTextTable *table = lastTable(edit.document());
+	QVERIFY2(table != nullptr, "the pasted html did not become a table");
+
+	QTextTableFormat tf = table->format();
+	QCOMPARE(tf.borderBrush().color(), edit.tableTheme().grid);
+	QCOMPARE(tf.borderCollapse(), true);
+	QTextTableCellFormat cf = table->cellAt(0, 0).format().toTableCellFormat();
+	QCOMPARE(cf.leftBorder(), qreal(0)); // the 3px of the source are gone
+	QCOMPARE(cf.background(), QBrush(Qt::NoBrush)); // and its fill as well
+}
+
+// The colours the tables were painted with are the palette's, not the note's,
+// so they must not end up in the file.
+void TestColorStrippingTextEdit::savedHtmlLosesTheTableColours()
+{
+	Probe edit;
+	edit.setHtml(R"(<table><tr><th>one</th></tr><tr><td>a</td></tr></table>)");
+	edit.restyleTables();
+
+	QString saved = stripTableTheme(edit.toHtml(), edit.tableTheme());
+	QCOMPARE(htmlHasColors(saved), false);
+}
+
+// The restyling belongs to the paste instead of being an edit of its own: one
+// Ctrl+Z takes a pasted table out completely.
+void TestColorStrippingTextEdit::restyledPasteUndoesAsOneStep()
+{
+	Probe edit;
+	edit.setHtml("<p>hello</p>");
+	edit.selectAll();
+	QMimeData md;
+	md.setHtml(R"(<table><tr><td>a</td></tr></table>)");
+	edit.insert(&md);
+	QVERIFY2(lastTable(edit.document()) != nullptr, "the pasted html did not become a table");
+
+	edit.document()->undo();
+	QVERIFY2(lastTable(edit.document()) == nullptr, "one undo left the pasted table behind");
 }
 
 QTEST_MAIN(TestColorStrippingTextEdit)

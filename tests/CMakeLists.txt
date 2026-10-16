@@ -33,12 +33,28 @@ qt_add_executable(tst_ColorStrippingTextEdit
     ../src/ColorStrippingTextEdit.h
     ../src/HtmlColorStripper.c++
     ../src/HtmlColorStripper.h
+    ../src/NoteTableStyle.c++
+    ../src/NoteTableStyle.h
 )
 target_include_directories(tst_ColorStrippingTextEdit PRIVATE ../src)
 target_compile_definitions(tst_ColorStrippingTextEdit PRIVATE NOTES_TEST_FIXTURES="${NOTES_TEST_FIXTURES}")
 target_link_libraries(tst_ColorStrippingTextEdit PRIVATE Qt6::Core Qt6::Widgets Qt6::Test)
 
+# the table look the editor gives to every table of a note
+qt_add_executable(tst_NoteTableStyle
+    tst_NoteTableStyle.c++
+    ../src/NoteTableStyle.c++
+    ../src/NoteTableStyle.h
+    ../src/HtmlColorStripper.c++
+    ../src/HtmlColorStripper.h
+)
+target_include_directories(tst_NoteTableStyle PRIVATE ../src)
+target_compile_definitions(tst_NoteTableStyle PRIVATE NOTES_TEST_FIXTURES="${NOTES_TEST_FIXTURES}")
+target_link_libraries(tst_NoteTableStyle PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+
 enable_testing()
 add_test(NAME HtmlColorStripper COMMAND tst_HtmlColorStripper)
 add_test(NAME ColorStrippingTextEdit COMMAND tst_ColorStrippingTextEdit)
+add_test(NAME NoteTableStyle COMMAND tst_NoteTableStyle)
 set_tests_properties(ColorStrippingTextEdit PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_tests_properties(NoteTableStyle PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

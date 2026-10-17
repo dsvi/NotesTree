@@ -10,6 +10,7 @@
 class PathsCollector : public QObject{
 	Q_OBJECT
 public:
+	explicit PathsCollector(QObject *parent = nullptr) : QObject(parent) {}
 	void startCollectingFor(const std::vector<std::weak_ptr<Note>> &notes);
 public slots:
 	void collect(const std::vector<QString> &);
@@ -18,7 +19,7 @@ signals:
 	void givePaths();
 private:
 	std::vector<QString> uris_;
-	int                  total_;
+	int                  total_ = 0;
 };
 
 class NotesTree : public QWidget
@@ -46,7 +47,6 @@ private:
 	NotesTreeModel    notesTreeModel_;
 	NoteSearchProxyModel notesProxy_;
 	std::vector<QMetaObject::Connection> attachConnections_;
-	std::unique_ptr<PathsCollector> pathsCollector_;
 
 	/// view indexes belong to notesProxy_; the model speaks source indexes
 	NoteInTree *noteAt(const QModelIndex &viewNdx) const;

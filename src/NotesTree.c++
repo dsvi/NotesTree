@@ -198,9 +198,9 @@ void NotesTree::copySelectedPathsToClipboard()
 		auto wp = noteAt(ndx)->note;
 		noteWPs.emplace_back(wp);
 	}
-	pathsCollector_ = make_unique<PathsCollector>();
-	connect(pathsCollector_.get(), &PathsCollector::collected, this, [&](const vector<QString>& lst){
-		auto tmp = std::move(pathsCollector_);
+	auto collector = new PathsCollector(this);
+	connect(collector, &PathsCollector::collected, this, [collector](const vector<QString>& lst){
+		collector->deleteLater();
 		if (lst.empty())
 			return;
 		QString list;
@@ -215,7 +215,7 @@ void NotesTree::copySelectedPathsToClipboard()
 		data->setData("x-special/gnome-copied-files", list.toUtf8());
 		QApplication::clipboard()->setMimeData(data.release());
 	});
-	pathsCollector_->startCollectingFor(noteWPs);
+	collector->startCollectingFor(noteWPs);
 }
 
 NoteInTree *NotesTree::noteAt(const QModelIndex &viewNdx) const
@@ -253,8 +253,8 @@ void PathsCollector::startCollectingFor(const std::vector<std::weak_ptr<Note> > 
 		auto sp = p.lock();
 		if (!sp)
 			continue;
-		connect(sp.get(), &Note::pathsReady, this, &PathsCollector::collect);
-		connect(this, &PathsCollector::givePaths, sp.get(), &Note::getNoteRelatedPaths);
+		connect(sp.get(), &Note::pathsReady, this, &PathsCollector::collect, Qt::UniqueConnection);
+		connect(this, &PathsCollector::givePaths, sp.get(), &Note::getNoteRelatedPaths, Qt::UniqueConnection);
 		total_ ++;
 	}
 	givePaths();
@@ -264,7 +264,9 @@ void PathsCollector::startCollectingFor(const std::vector<std::weak_ptr<Note> > 
 
 void PathsCollector::collect(const std::vector<QString> &lst)
 {
+	if (total_ <= 0)
+		return;
 	uris_.insert(uris_.end(), lst.begin(), lst.end());
-	if (--total_ <= 0)
+	if (--total_ == 0)
 		emit collected(uris_);
 }

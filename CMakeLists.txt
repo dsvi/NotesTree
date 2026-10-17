@@ -84,6 +84,8 @@ set(PROJECT_SOURCES
     src/NoteEditor.h
     src/NoteEditorSearchHighlighter.c++
     src/NoteEditorSearchHighlighter.h
+    src/NoteSearchProxyModel.c++
+    src/NoteSearchProxyModel.h
     src/NoteTableStyle.c++
     src/NoteTableStyle.h
     src/NotesTree.c++

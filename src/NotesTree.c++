@@ -14,10 +14,12 @@ void NotesTree::root(Note *root)
 	ASSERT(notesTreeModel_.noteAt(QModelIndex()) == nullptr); // should be called only once
 	notesTreeModel_.root(root);
 	auto treeView = ui.notesView;
-	treeView->setModel(&notesTreeModel_);
+	notesProxy_.setSourceModel(&notesTreeModel_);
+	treeView->setModel(&notesProxy_);
+	notesProxy_.sort(0, Qt::AscendingOrder);
 	connect(ui.notesView->selectionModel(), &QItemSelectionModel::currentChanged, [this](const QModelIndex & index){
 		if (index.isValid())
-			emit noteActivated(notesTreeModel_.noteAt(index)->note);
+			emit noteActivated(noteAt(index)->note);
 		else
 			emit noteActivated(std::weak_ptr<Note>());
 	});
@@ -80,7 +82,7 @@ void NotesTree::root(Note *root)
 		if (selected.size() == 1){
 			attach->setEnabled(true);
 			auto ndx = selected.indexes()[0];
-			auto note = notesTreeModel_.noteAt(ndx);
+			auto note = noteAt(ndx);
 			auto n = note->note.lock();
 			if (!n)
 				return;
@@ -161,7 +163,7 @@ void NotesTree::addNew()
 	auto r = dialog.result();
 	QModelIndex mdlNdx;
 	if (selected.size() == 1 && !r->addToRoot)
-		mdlNdx = selected[0];
+		mdlNdx = toSource(selected[0]);
 	notesTreeModel_.addNote(mdlNdx, r->name);
 }
 
@@ -182,7 +184,7 @@ void NotesTree::removeSelected()
 	dialog.setDefaultButton(QMessageBox::No);
 	if ( dialog.exec() != QMessageBox::Yes )
 		return;
-	notesTreeModel_.removeNotes(selected);
+	notesTreeModel_.removeNotes(toSource(selected));
 }
 
 void NotesTree::copySelectedPathsToClipboard()
@@ -193,7 +195,7 @@ void NotesTree::copySelectedPathsToClipboard()
 		return;
 	vector<weak_ptr<Note>> noteWPs;
 	for(auto &ndx : selected){
-		auto wp = notesTreeModel_.noteAt(ndx)->note;
+		auto wp = noteAt(ndx)->note;
 		noteWPs.emplace_back(wp);
 	}
 	pathsCollector_ = make_unique<PathsCollector>();
@@ -214,6 +216,24 @@ void NotesTree::copySelectedPathsToClipboard()
 		QApplication::clipboard()->setMimeData(data.release());
 	});
 	pathsCollector_->startCollectingFor(noteWPs);
+}
+
+NoteInTree *NotesTree::noteAt(const QModelIndex &viewNdx) const
+{
+	return notesTreeModel_.noteAt(toSource(viewNdx));
+}
+
+QModelIndex NotesTree::toSource(const QModelIndex &viewNdx) const
+{
+	return notesProxy_.mapToSource(viewNdx);
+}
+
+QModelIndexList NotesTree::toSource(const QModelIndexList &viewNdxs) const
+{
+	QModelIndexList ret;
+	for (auto &i : viewNdxs)
+		ret << toSource(i);
+	return ret;
 }
 
 void NotesTree::searchFor(const QString &str, NoteInTree::SearchType t )

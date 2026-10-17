@@ -13,24 +13,25 @@ public:
 	QString name;
 	std::weak_ptr<Note> note;
 	NotesTreeModel *model;
-	QModelIndex     mdlNdx;
 	bool    hasAttach;
 	bool    isMarked = false;
 	NoteInTree *parent;
 	std::vector<std::shared_ptr<NoteInTree>> children;
-	std::vector<NoteInTree*> shown;
 	enum SearchType{
 		WholePhrase,
 		AllTheWords,
 	};
-	/// mark all nodes which have @str in text or name
-	void markAll(const QString &str, SearchType);
-	/// resets marked flag recursively.
-	void showAndResetMarksAll();
+	/// marks this note and all its subnotes which match the model's keywords.
+	/// the note text arrives asynchronously, so marks keep landing after the
+	/// call returns
+	void markAll();
+	/// clears the marks of this note and all its subnotes
+	void unmarkAll();
+	/// forgets the note text fetched for the previous search
+	void dropTextCache();
 private:
 	bool    isLoadStarted = false;
 	QString cachedTxt;
-	std::vector<QString> keywords_;
 signals:
 	void changeName(const QString &name);
 	void adopt(const std::vector<std::weak_ptr<Note>> &list);
@@ -42,15 +43,7 @@ public slots:
 	void nameChanged(const QString &name);
 	void gotAttach();
 private:
-	void sortShown();
-	/// makes the note and all its parents shown
-	void showFromHereToParent();
-
-	std::vector<QString> &keywords();
-	void markAll();
 	void mark();
-	void hideAndResetMarksAll();
-
 };
 
 Q_DECLARE_METATYPE(std::shared_ptr<NoteInTree>)
@@ -61,6 +54,8 @@ class NotesTreeModel : public QAbstractItemModel
 public:
 	enum Roles {
 		NotePtrRole = Qt::UserRole + 1,
+		/// bool: the note matches the search currently running
+		MatchRole,
 	};
 
 	explicit NotesTreeModel(QObject *parent = nullptr);
@@ -79,10 +74,14 @@ public:
 
 	Qt::ItemFlags flags(const QModelIndex &index) const override;
 	QModelIndex index(int row, int column,
-										const QModelIndex &parent = QModelIndex()) const override;
+											const QModelIndex &parent = QModelIndex()) const override;
 	QModelIndex parent(const QModelIndex &index) const override;
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 	int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+
+	/// the live index of item, or an invalid one if item is the root or is gone
+	QModelIndex indexOfItem(const NoteInTree *item) const;
+	bool isSearching() const;
 
 	NoteInTree *noteAt(const QModelIndex &);
 	NoteInTree *noteAt(const QModelIndex &) const;
@@ -102,11 +101,14 @@ public slots:
 private:
 	std::unique_ptr<NoteInTree> root_;
 	Note      *rootNote_;
+	std::vector<QString> searchKeywords_;
 	QString mimeType_ = "application/x.notes-tree";
+
+	void noteMarked(const NoteInTree *item);
+	void noteRenamed(const NoteInTree *item);
 
 	friend class NoteInTree;
 };
-
 
 
 inline
@@ -124,6 +126,12 @@ inline
 NoteInTree *NotesTreeModel::noteAt(const QModelIndex &noteNdx) const
 {
 	return mut_this->noteAt(noteNdx);
+}
+
+inline
+bool NotesTreeModel::isSearching() const
+{
+	return !searchKeywords_.empty();
 }
 
 #endif // NOTESTREEMODEL_H

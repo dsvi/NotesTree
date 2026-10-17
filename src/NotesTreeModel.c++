@@ -23,9 +23,11 @@ QVariant NotesTreeModel::data(const QModelIndex &index, int role) const
 {
 	if (!index.isValid())
 		return QVariant();
-	if (role != Qt::DisplayRole && role != Qt::EditRole)
+	if (role != Qt::DisplayRole && role != Qt::EditRole && role != MatchRole)
 		return QVariant();
 	NoteInTree *item = noteAt(index);
+	if (role == MatchRole)
+		return item->isMarked;
 	auto ret = item->name;
 	if (role == Qt::DisplayRole && item->hasAttach)
 		ret.prepend("📎");
@@ -106,28 +108,31 @@ QModelIndex NotesTreeModel::index(int row, int column, const QModelIndex &parent
 {
 	if (!hasIndex(row, column, parent))
 		return QModelIndex();
-
-	const NoteInTree *parentItem = noteAt(parent);
-
-	ASSERT((size_t) row < parentItem->shown.size());
-	NoteInTree *childItem = parentItem->shown[row];
-	childItem->mdlNdx = createIndex(row, column, childItem);
-	ASSERT(childItem->mdlNdx.isValid());
-	return childItem->mdlNdx;
+	NoteInTree *parentItem = noteAt(parent);
+	return createIndex(row, column, parentItem->children[row].get());
 }
 
 QModelIndex NotesTreeModel::parent(const QModelIndex &index) const
 {
-	NoteInTree *childItem = noteAt(index);
-	if (childItem == root_.get())
+	if (!index.isValid())
 		return QModelIndex();
-	return childItem->parent->mdlNdx;
+	return indexOfItem(noteAt(index)->parent);
+}
+
+QModelIndex NotesTreeModel::indexOfItem(const NoteInTree *item) const
+{
+	if (!item || item == root_.get())
+		return QModelIndex();
+	auto &sib = item->parent->children;
+	auto it = find_if(sib.begin(), sib.end(), [&](auto &p){ return p.get() == item; });
+	if (it == sib.end())
+		return QModelIndex();
+	return createIndex(it - sib.begin(), 0, const_cast<NoteInTree*>(item));
 }
 
 int NotesTreeModel::rowCount(const QModelIndex &parent) const
 {
-	const NoteInTree *parentItem = noteAt(parent);
-	return parentItem->shown.size();
+	return noteAt(parent)->children.size();
 }
 
 int NotesTreeModel::columnCount(const QModelIndex &parent) const
@@ -139,7 +144,6 @@ int NotesTreeModel::columnCount(const QModelIndex &parent) const
 void NotesTreeModel::clear()
 {
 	beginResetModel();
-	root_->shown.clear();
 	root_->children.clear();
 	endResetModel();
 }
@@ -162,12 +166,25 @@ void NotesTreeModel::removeNotes(const QModelIndexList &noteNdx)
 
 void NotesTreeModel::searchFor(const QString &str, NoteInTree::SearchType t)
 {
-	root_->markAll(str, t);
+	if (str.isEmpty()){
+		endSearch();
+		return;
+	}
+	searchKeywords_.clear();
+	if (t == NoteInTree::WholePhrase)
+		searchKeywords_.emplace_back(str);
+	else
+		for (auto &w : str.split(" ", Qt::SkipEmptyParts))
+			searchKeywords_.emplace_back(w);
+	root_->unmarkAll();
+	root_->markAll();
 }
 
 void NotesTreeModel::endSearch()
 {
-	root_->showAndResetMarksAll();
+	searchKeywords_.clear();
+	root_->unmarkAll();
+	root_->dropTextCache();
 }
 
 NoteInTree::NoteInTree(std::weak_ptr<Note> n, QThread *viewThread) : QObject(nullptr)
@@ -199,40 +216,33 @@ NoteInTree::NoteInTree(std::weak_ptr<Note> n, QThread *viewThread) : QObject(nul
 
 void NoteInTree::addSubnote(std::shared_ptr<NoteInTree> n)
 {
-	model->layoutAboutToBeChanged();
+	auto row = static_cast<int>(children.size());
+	model->beginInsertRows(model->indexOfItem(this), row, row);
 	children.emplace_back(n);
-	shown.emplace_back(n.get());
-	auto newNote = children.back().get();
-	newNote->model = model;
-	newNote->parent = this;
-	sortShown();
-	model->layoutChanged();
+	n->model = model;
+	n->parent = this;
+	model->endInsertRows();
 }
 
 void NoteInTree::removeThis()
 {
 	if ( this == model->root_.get() )
 		return;
-	model->beginRemoveRows(mdlNdx.parent(), mdlNdx.row(), mdlNdx.row());
 	auto &l = parent->children;
 	auto it = find_if(l.begin(), l.end(), [&](auto &p){return p.get() == this;});
-	ASSERT(it != l.end());
-	auto tmp = *it;
+	if (it == l.end())
+		return;
+	auto row = static_cast<int>(it - l.begin());
+	auto self = *it; // keeps this alive while its own entry is erased
+	model->beginRemoveRows(model->indexOfItem(parent), row, row);
 	l.erase(it);
-	auto &sl = parent->shown;
-	auto sit = find_if(sl.begin(), sl.end(), [&](auto &p){return p == this;});
-	if (sit != sl.end())
-		sl.erase(sit);
 	model->endRemoveRows();
 }
 
 void NoteInTree::nameChanged(const QString &name)
 {
 	this->name = name;
-	model->dataChanged(mdlNdx, mdlNdx, QVector<int>{Qt::DisplayRole});
-	model->layoutAboutToBeChanged();
-	parent->sortShown();
-	model->layoutChanged();
+	model->noteRenamed(this);
 }
 
 void NoteInTree::gotAttach()
@@ -240,44 +250,22 @@ void NoteInTree::gotAttach()
 	hasAttach = true;
 }
 
-void NoteInTree::showAndResetMarksAll()
+void NoteInTree::unmarkAll()
 {
-	if (!parent && keywords_.empty())
+	for (auto &c : children)
+		c->unmarkAll();
+	if (!isMarked)
 		return;
-	model->beginResetModel();
-	keywords_.clear();
-	isLoadStarted = false;
-	cachedTxt.clear();
-	shown.clear();
 	isMarked = false;
-	for (auto &c : children){
-		shown.push_back(c.get());
-		c->showAndResetMarksAll();
-	}
-	sortShown();
-	model->endResetModel();
+	model->noteMarked(this);
 }
 
-void NoteInTree::markAll(const QString &str, SearchType t)
+void NoteInTree::dropTextCache()
 {
-	if (str.isEmpty()){
-		showAndResetMarksAll();
-		return;
-	}
-	model->beginResetModel();
-	hideAndResetMarksAll();
-	model->endResetModel();
-	keywords_.clear();
-	ASSERT( t == WholePhrase || t == AllTheWords);
-	if (t == WholePhrase){
-		keywords_.emplace_back(str);
-	}
-	if (t == AllTheWords){
-		auto l = str.split(" ", Qt::SkipEmptyParts);
-		for (auto &s:l)
-			keywords_.emplace_back(move(s));
-	}
-	markAll();
+	isLoadStarted = false;
+	cachedTxt.clear();
+	for (auto &c : children)
+		c->dropTextCache();
 }
 
 void NoteInTree::markAll()
@@ -301,61 +289,34 @@ void NoteInTree::markAll()
 
 void NoteInTree::mark()
 {
-	if (cachedTxt.isEmpty())
+	auto &kwds = model->searchKeywords_;
+	if (kwds.empty() || cachedTxt.isEmpty() || isMarked)
 		return;
-	qApp->processEvents();
-	auto &kwds = keywords();
 	size_t found = 0;
 	for (auto &k :kwds){
 		if (cachedTxt.contains(k, Qt::CaseInsensitive))
 			found++;
 	}
-	if (kwds.size() == found){
-		model->layoutAboutToBeChanged();
-		isMarked = true;
-		showFromHereToParent();
-		model->layoutChanged();
-	}
+	if (kwds.size() != found)
+		return;
+	isMarked = true;
+	model->noteMarked(this);
 }
 
-void NoteInTree::hideAndResetMarksAll()
+void NotesTreeModel::noteMarked(const NoteInTree *item)
 {
-	isMarked = false;
-	shown.clear();
-	for (auto &c : children){
-		c->hideAndResetMarksAll();
-	}
+	auto ndx = indexOfItem(item);
+	if (!ndx.isValid())
+		return;
+	emit dataChanged(ndx, ndx, {Qt::DisplayRole, MatchRole});
 }
 
-void NoteInTree::sortShown()
+void NotesTreeModel::noteRenamed(const NoteInTree *item)
 {
-	std::sort(shown.begin(), shown.end(), [](const auto &a, const auto &b){
-		return a->name.compare(b->name, Qt::CaseInsensitive) < 0;
-	});
-}
-
-void NoteInTree::showFromHereToParent()
-{
-	NoteInTree *n = this;
-	while (n->parent){
-		auto &sl = n->parent->shown;
-		auto it = find_if(sl.begin(), sl.end(), [&](auto &p){return p == n;});
-		if (it == sl.end()){
-			ASSERT(find_if(n->parent->children.begin(), n->parent->children.end(), [&](auto &p){return p.get() == n;}) != n->parent->children.end());
-			sl.push_back(n);
-			n->parent->sortShown();
-		}
-		n = n->parent;
-	}
-}
-
-std::vector<QString> &NoteInTree::keywords()
-{
-	NoteInTree *n = this;
-	while (n->parent){
-		n = n->parent;
-	}
-	return n->keywords_;
+	auto ndx = indexOfItem(item);
+	if (!ndx.isValid())
+		return;
+	emit dataChanged(ndx, ndx, {Qt::DisplayRole, Qt::EditRole});
 }
 
 

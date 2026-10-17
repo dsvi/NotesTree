@@ -5,6 +5,7 @@
 
 #include "Note.h"
 #include "NotesTreeModel.h"
+#include "NoteSearchProxyModel.h"
 
 class PathsCollector : public QObject{
 	Q_OBJECT
@@ -42,9 +43,15 @@ private slots:
 
 private:
 	Ui::NotesTree ui;
-	NotesTreeModel  notesTreeModel_;
+	NotesTreeModel    notesTreeModel_;
+	NoteSearchProxyModel notesProxy_;
 	std::vector<QMetaObject::Connection> attachConnections_;
 	std::unique_ptr<PathsCollector> pathsCollector_;
+
+	/// view indexes belong to notesProxy_; the model speaks source indexes
+	NoteInTree *noteAt(const QModelIndex &viewNdx) const;
+	QModelIndex toSource(const QModelIndex &viewNdx) const;
+	QModelIndexList toSource(const QModelIndexList &viewNdxs) const;
 };
 
 

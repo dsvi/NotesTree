@@ -499,9 +499,9 @@ void Note::save(QString html)
 {
 	try{
 		saveTxt(html);
-		collectEmbeds(html); // to get validEmbeds_; deliberately not handleRefs():
-		                     // saving must never kick off downloads
-		if (exists(embedDir())){
+		// deliberately not handleRefs(): saving must never kick off downloads.
+		// false means "could not parse", not "no embeds": pruning would wipe them
+		if (collectEmbeds(html) && exists(embedDir())){
 			for (auto&& ef : directory_iterator(embedDir())){ // remove unused embeds
 				if (validEmbeds_.find(ef.path().filename()) == validEmbeds_.end())
 					remove(ef.path());
@@ -582,16 +582,22 @@ void Note::handleRefs(QString html)
 	});
 }
 
-void Note::collectEmbeds(const QString &html)
+bool Note::collectEmbeds(const QString &html)
 {
 	validEmbeds_.clear();
-	VisitSrcUrls(html, [&](QDomElement e){
+	if (html.isEmpty())
+		return true; // an empty note references nothing, and that is known
+	QDomDocument doc;
+	if (!doc.setContent(html))
+		return false;
+	VisitSrcUrls(doc, [&](QDomElement e){
 		auto url = e.attribute("src");
 		if (url.isEmpty() || !url.startsWith("."))
 			return;
 		path em = toPath(QUrl::fromPercentEncoding(url.toUtf8()));
 		validEmbeds_.insert(em.filename());
 	});
+	return true;
 }
 
 void Note::pasteImage(const QImage &img)

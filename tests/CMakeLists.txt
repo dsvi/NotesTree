@@ -55,13 +55,11 @@ target_include_directories(tst_NoteTableStyle PRIVATE ../src)
 target_compile_definitions(tst_NoteTableStyle PRIVATE NOTES_TEST_FIXTURES="${NOTES_TEST_FIXTURES}")
 target_link_libraries(tst_NoteTableStyle PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
 
-# the notes tree model and its drag and drop. The drop has to end up on disk
-# to be worth testing, so this one works with real Notes, which drags in the
-# rest of the app's sources: Note.c++ uses VisitSrcUrls() from NoteEditor.c++
-# (and through it the editor widget with its custom text edit), and both reach
-# for app(), so App/Config/Downloader/KdeLookStyle have to link too.
-qt_add_executable(tst_NotesTreeModel
-    tst_NotesTreeModel.c++
+# the sources a test needs as soon as it works with real Notes: Note.c++ uses
+# VisitSrcUrls() from NoteEditor.c++ (and through it the editor widget with its
+# custom text edit), and both reach for app(), so App/Config/Downloader/
+# KdeLookStyle have to link too.
+set(NOTES_APP_SOURCES
     ../src/NotesTreeModel.c++
     ../src/NotesTreeModel.h
     ../src/ByteArraySerializer.h
@@ -92,10 +90,30 @@ qt_add_executable(tst_NotesTreeModel
     ../src/KdeLookStyle.h
     ../src/precomp.h
 )
+
+# the notes tree model and its drag and drop. The drop has to end up on disk to
+# be worth testing, so the notes here are real ones.
+qt_add_executable(tst_NotesTreeModel
+    tst_NotesTreeModel.c++
+    ${NOTES_APP_SOURCES}
+)
 target_include_directories(tst_NotesTreeModel PRIVATE ../src)
 # the app's sources expect it: Note.h has no includes of its own
 target_precompile_headers(tst_NotesTreeModel PRIVATE ../src/precomp.h)
 target_link_libraries(tst_NotesTreeModel PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test
+    Qt6::Svg Qt6::Xml Qt6::Network
+)
+
+# what a save is allowed to throw away: the note's html and its embeds. The
+# "is this note empty" decision is made by the editor, so it is in the loop.
+qt_add_executable(tst_NoteSave
+    tst_NoteSave.c++
+    ${NOTES_APP_SOURCES}
+)
+target_include_directories(tst_NoteSave PRIVATE ../src)
+target_precompile_headers(tst_NoteSave PRIVATE ../src/precomp.h)
+target_link_libraries(tst_NoteSave PRIVATE
     Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test
     Qt6::Svg Qt6::Xml Qt6::Network
 )
@@ -105,6 +123,8 @@ add_test(NAME HtmlColorStripper COMMAND tst_HtmlColorStripper)
 add_test(NAME ColorStrippingTextEdit COMMAND tst_ColorStrippingTextEdit)
 add_test(NAME NoteTableStyle COMMAND tst_NoteTableStyle)
 add_test(NAME NotesTreeModel COMMAND tst_NotesTreeModel)
+add_test(NAME NoteSave COMMAND tst_NoteSave)
 set_tests_properties(ColorStrippingTextEdit PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 set_tests_properties(NoteTableStyle PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 set_tests_properties(NotesTreeModel PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_tests_properties(NoteSave PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

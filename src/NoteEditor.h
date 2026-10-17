@@ -48,4 +48,8 @@ private:
 /// returns html possibly edited by \p f 
 QString VisitSrcUrls(QString html, std::function<void(QDomElement)> &&f);
 
+/// same for an already parsed document, so a caller can tell "no img/source"
+/// from "could not parse"
+void VisitSrcUrls(QDomDocument &doc, const std::function<void(QDomElement)> &f);
+
 #endif // NOTEEDITOR_H

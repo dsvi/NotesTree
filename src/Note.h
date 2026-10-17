@@ -122,7 +122,9 @@ private:
 
 	/// fills validEmbeds_ with the local embeds referenced in html.
 	/// like handleRefs() but without any downloading; used by save()
-	void collectEmbeds(const QString &html);
+	/// returns false if html could not be parsed: validEmbeds_ is then unknown,
+	/// not empty
+	bool collectEmbeds(const QString &html);
 
 	QString loadTxt();
 	void saveTxt(const QString &txt);

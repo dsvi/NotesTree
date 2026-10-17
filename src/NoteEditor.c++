@@ -442,24 +442,20 @@ void NoteEditor::save()
 		return;
 	haveToSave_ = false;
 	autosaveTimer_.stop();
-	QString txt = ui.noteEdit->toPlainText().trimmed();
-	QString html = ui.noteEdit->toHtml();
-	if (txt.isEmpty())
+	// "no plain text" on its own would also match a note holding only a table,
+	// and truncate it
+	auto doc = ui.noteEdit->document();
+	if (doc->blockCount() == 1 && doc->toPlainText().trimmed().isEmpty())
 		emit saveTxt(QString());
 	else
 		// the table colours are the palette's, not the note's: they must not end
 		// up in the file, where a browser or another theme would get them wrong
-		emit saveTxt(stripTableTheme(html, ui.noteEdit->tableTheme()));
+		emit saveTxt(stripTableTheme(ui.noteEdit->toHtml(), ui.noteEdit->tableTheme()));
 }
 
 
-QString VisitSrcUrls(QString html, std::function<void(QDomElement)> &&f)
+void VisitSrcUrls(QDomDocument &doc, const std::function<void(QDomElement)> &f)
 {
-	QDomDocument doc;
-	if (!doc.setContent(html))
-		return html; // unparseable input: hand it back untouched. doc.toString(0)
-	                 // would be empty, and callers would blank the editor or
-	                 // truncate the saved note file.
 	vector<QDomElement> list;
 	for (auto tag: {"img", "source"}){
 		auto l = doc.elementsByTagName(tag);
@@ -468,5 +464,15 @@ QString VisitSrcUrls(QString html, std::function<void(QDomElement)> &&f)
 	}
 	for (auto &e : list)
 		f(e);
+}
+
+QString VisitSrcUrls(QString html, std::function<void(QDomElement)> &&f)
+{
+	QDomDocument doc;
+	if (!doc.setContent(html))
+		return html; // unparseable input: hand it back untouched. doc.toString(0)
+	                 // would be empty, and callers would blank the editor or
+	                 // truncate the saved note file.
+	VisitSrcUrls(doc, f);
 	return doc.toString(0);
 }

@@ -110,7 +110,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		edit->setContextMenuPolicy(Qt::CustomContextMenu);
 	}
 	{
-		auto act = app->addToolButton(this, ui.toolBoxLayout, ":/ico/bold");
+		auto act = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/bold");
 		act->setShortcut(QKeySequence::Bold);
 		enableOnlyWhenTextSelected(act);
 		act->setCheckable(true);
@@ -131,7 +131,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 	}
 	{
-		auto act = app->addToolButton(this, ui.toolBoxLayout, ":/ico/italic");
+		auto act = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/italic");
 		act->setShortcut(QKeySequence::Italic);
 		enableOnlyWhenTextSelected(act);
 		act->setCheckable(true);
@@ -149,7 +149,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 	}
 	{
-		auto act = app->addToolButton(this, ui.toolBoxLayout, ":/ico/superscript");
+		auto act = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/superscript");
 		act->setCheckable(true);
 		enableOnlyWhenTextSelected(act);
 		connect(edit, &QTextEdit::selectionChanged, [=](){
@@ -169,7 +169,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 	}
 	{
-		auto act = app->addToolButton(this, ui.toolBoxLayout, ":/ico/subscript");
+		auto act = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/subscript");
 		act->setCheckable(true);
 		enableOnlyWhenTextSelected(act);
 		connect(edit, &QTextEdit::selectionChanged, [=](){
@@ -189,7 +189,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 	}	
 	{
-		auto act = app->addToolButton(this, ui.toolBoxLayout, ":/ico/header");
+		auto act = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/header");
 		act->setToolTip(tr("Make header"));
 		enableOnlyWhenTextSelected(act);
 		connect(act, &QAction::triggered, [=]{
@@ -202,7 +202,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 	}
 	{
-		auto act = app->addToolButton(this, ui.toolBoxLayout, ":/ico/preformatted");
+		auto act = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/preformatted");
 		act->setToolTip(tr("Monospaced preformated text"));
 		enableOnlyWhenTextSelected(act);
 		connect(act, &QAction::triggered, [=]{
@@ -215,7 +215,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 	}
 	{
-		auto act = app->addToolButton(this, ui.toolBoxLayout, ":/ico/link");
+		auto act = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/link");
 		act->setToolTip(tr("Make link"));
 		enableOnlyWhenTextSelected(act);
 		connect(act, &QAction::triggered, [=,this]{
@@ -236,7 +236,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 		});
 	}
 	{
-		auto act = app->addToolButton(this, ui.toolBoxLayout, ":/ico/remove style");
+		auto act = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/remove style");
 		act->setToolTip(tr("Remove colors or formatting"));
 		QMenu *menu = new QMenu(this);
 		auto remStyles = menu->addAction(tr("remove styles (colors and fonts)"));
@@ -268,7 +268,7 @@ NoteEditor::NoteEditor(QWidget *parent) :
 	}
 	ui.toolBoxLayout->addStretch();
 	{
-		QAction *search = app->addToolButton(this, ui.toolBoxLayout, ":/ico/search");
+		QAction *search = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/search");
 		search->setToolTip(tr("Find text in the note"));
 		//search->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
 		search->setShortcut(QKeySequence::Find);

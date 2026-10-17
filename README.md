@@ -18,5 +18,9 @@ Or launch `./user-install.sh` it will build it inside `docker` and install every
 
 The docker build (`./docker-build.sh`) needs nothing but docker: it builds a fully static musl binary (plus an AppImage of it) for the host architecture.
 
+## Developing it
+
+`.devcontainer/` has two Alpine dev containers - for Qt Creator's Development Container support, and they work with VS Code / the devcontainers CLI too. One uses Qt 6 from the Alpine repos for day to day work (fast links, unit tests, debuggers, the app running on your own Wayland session); the other reproduces the shipping toolchain, Qt 6.12 built from source and fully static. Details in `.devcontainer/README.md`.
+
 
 

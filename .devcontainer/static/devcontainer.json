@@ -1,0 +1,63 @@
+{
+  "name": "notestree-alpine-static",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "../.."
+  },
+  "workspaceFolder": "/workspaces/NotesTree",
+  "remoteUser": "dev",
+  "containerUser": "dev",
+  "mounts": [
+    "type=bind,source=${localEnv:XDG_RUNTIME_DIR},target=/run/user/1000"
+  ],
+  "containerEnv": {
+    "XDG_RUNTIME_DIR": "/run/user/1000",
+    "WAYLAND_DISPLAY": "wayland-0",
+    "QT_QPA_PLATFORM": "wayland",
+    "CMAKE_PREFIX_PATH": "/opt/qt"
+  },
+  "remoteEnv": {
+    "XDG_RUNTIME_DIR": "/run/user/1000",
+    "WAYLAND_DISPLAY": "wayland-0",
+    "QT_QPA_PLATFORM": "wayland"
+  },
+  "customizations": {
+    "qt-creator": {
+      "auto-detect-kits": false,
+      "kits": [
+        {
+          "name": "NotesTree static musl GCC",
+          "qt": "/opt/qt/bin/qmake6",
+          "compiler": {
+            "C": "/usr/bin/gcc",
+            "Cxx": "/usr/bin/g++"
+          },
+          "cmake": {
+            "binary": "/usr/bin/cmake",
+            "generator": "Ninja"
+          },
+          "debugger": "/usr/bin/gdb"
+        },
+        {
+          "name": "NotesTree static musl clang",
+          "qt": "/opt/qt/bin/qmake6",
+          "compiler": {
+            "C": "/usr/bin/clang",
+            "Cxx": "/usr/bin/clang++"
+          },
+          "cmake": {
+            "binary": "/usr/bin/cmake",
+            "generator": "Ninja"
+          },
+          "debugger": "/usr/bin/lldb"
+        }
+      ],
+      "device": {
+        "run-processes-in-terminal": true,
+        "copy-cmd-bridge": false,
+        "mount-libexec": true,
+        "libexec-mount-point": "/devcontainer/libexec"
+      }
+    }
+  }
+}

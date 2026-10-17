@@ -14,16 +14,16 @@ MainWindow::MainWindow(QWidget *parent) :
 	qRegisterMetaType<std::shared_ptr<NoteInTree>>();
 	qRegisterMetaType<std::vector<QString>>();
 
-	rootNote_.moveToThread(app->ioThread());
+	rootNote_.moveToThread(app()->ioThread());
 	//connect(this, &NotesTreeModel::loadFrom, rootNote_, &Note::createHierarchyFromRoot);
 	ui->notesTree->root(&rootNote_);
 	connect(ui->notesTree, &NotesTree::noteActivated, ui->noteEditor, &NoteEditor::editTextFor);
 
-	connect(app->cfg(), &Config::rootChanged, &rootNote_, &Note::createHierarchyFromRoot);
-	app->cfg()->emitRootChanged();
+	connect(app()->cfg(), &Config::rootChanged, &rootNote_, &Note::createHierarchyFromRoot);
+	app()->cfg()->emitRootChanged();
 
 	try {
-		auto settings = app->cfg()->unimportant_settings();
+		auto settings = app()->cfg()->unimportant_settings();
 		const auto geometry = settings.value("MainWindow.geometry", QByteArray()).toByteArray();
 		if (geometry.isEmpty())
 			setGeometry(100, 100, 800, 800);
@@ -34,7 +34,7 @@ MainWindow::MainWindow(QWidget *parent) :
 			ui->splitter->restoreState(state.toByteArray());
 	}
 	catch(...){
-		qCritical() << app->errorMessage(std::current_exception(), tr("Can't load config file."));
+		qCritical() << app()->errorMessage(std::current_exception(), tr("Can't load config file."));
 	}
 }
 
@@ -47,13 +47,13 @@ void MainWindow::closeEvent(QCloseEvent *ev)
 {
 	ui->noteEditor->save();
 	try{
-		auto settings = app->cfg()->unimportant_settings();
+		auto settings = app()->cfg()->unimportant_settings();
 		settings.setValue("MainWindow.geometry", saveGeometry());
 		settings.setValue("MainWindow.splitterState", ui->splitter->saveState());
 		settings.sync();
 	}
 	catch(...){
-		qCritical() << app->errorMessage(std::current_exception(), tr("Can't save config file."));
+		qCritical() << app()->errorMessage(std::current_exception(), tr("Can't save config file."));
 	}
 	ev->accept();
 }

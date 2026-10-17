@@ -22,12 +22,12 @@ void NotesTree::root(Note *root)
 			emit noteActivated(std::weak_ptr<Note>());
 	});
 	
-	QAction *addNew = app->addToolButton(this, ui.toolBoxLayout, ":/ico/add");
+	QAction *addNew = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/add");
 	addNew->setShortcuts(QKeySequence::New);
 	addNew->setToolTip(tr("Create a new note. As a subnote to the selected note, or at root of the notes tree"));
 	connect(addNew, &QAction::triggered, this, &NotesTree::addNew);
 	
-	QAction	*removeSelected = app->addToolButton(this, ui.toolBoxLayout, ":/ico/remove");
+	QAction	*removeSelected = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/remove");
 	removeSelected->setShortcuts(QKeySequence::Delete);
 	removeSelected->setToolTip(tr("Delete selected note and its subnotes"));
 	removeSelected->setEnabled(false);
@@ -35,9 +35,9 @@ void NotesTree::root(Note *root)
 	connect(removeSelected, &QAction::triggered, this, &NotesTree::removeSelected);
 	
 	float scale = devicePixelRatioF();
-	QIcon attachOpenIcon = app->themedSVGIcon(":/ico/attachment", scale);
-	QIcon attachAddIcon = app->themedSVGIcon(":/ico/attachment-add", scale);
-	QAction	*attach = app->addToolButton(this, ui.toolBoxLayout, attachAddIcon);
+	QIcon attachOpenIcon = app()->themedSVGIcon(":/ico/attachment", scale);
+	QIcon attachAddIcon = app()->themedSVGIcon(":/ico/attachment-add", scale);
+	QAction	*attach = app()->addToolButton(this, ui.toolBoxLayout, attachAddIcon);
 	attach->setShortcut(QKeySequence(+Qt::CTRL + +Qt::Key_A));
 	attach->setEnabled(false);
 	auto setAttachOpen = [=](){
@@ -48,7 +48,7 @@ void NotesTree::root(Note *root)
 		attach->setIcon(attachAddIcon);
 		attach->setToolTip(tr("Add attachment"));
 	};
-	QAction	*copySelected = app->addToolButton(this, ui.toolBoxLayout, ":/ico/copy"); 
+	QAction	*copySelected = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/copy"); 
 	copySelected->setShortcuts(QKeySequence::Copy);
 	copySelected->setToolTip(tr(
 		"Copy note's files to clipboard,\n"
@@ -95,17 +95,17 @@ void NotesTree::root(Note *root)
 		ui.searchType->insertItem(NoteInTree::SearchType::WholePhrase, tr("whole phrase"));
 		ui.searchType->insertItem(NoteInTree::SearchType::AllTheWords, tr("all of the words"));
 		constexpr const char * settingsSearchType = "NotesTree.searchType";
-		auto settings = app->cfg()->unimportant_settings();
+		auto settings = app()->cfg()->unimportant_settings();
 		auto t = settings.value(settingsSearchType); 
 		if (t.isValid())
 			ui.searchType->setCurrentIndex(t.toInt());
 		connect(qApp, &QCoreApplication::aboutToQuit, [=, this](){
-			auto settings = app->cfg()->unimportant_settings();
+			auto settings = app()->cfg()->unimportant_settings();
 			settings.setValue(settingsSearchType, ui.searchType->currentIndex());
 		});
 	}
 	{
-		QAction *search = app->addToolButton(this, ui.toolBoxLayout, ":/ico/search");
+		QAction *search = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/search");
 		search->setToolTip(tr("Filter notes"));
 		search->setShortcut(QKeySequence(+Qt::SHIFT + +Qt::Key_F));
 		//search->setShortcut(QKeySequence::Find);
@@ -146,7 +146,7 @@ void NotesTree::root(Note *root)
 void NotesTree::addNew()
 {
 	auto sm = ui.notesView->selectionModel();
-	AddNewNoteDialog dialog(app->mainWindow());
+	AddNewNoteDialog dialog(app()->mainWindow());
 	auto selected = sm->selectedIndexes();
 	if (selected.size() != 1)
 		dialog.hideWhereToAddSelection();
@@ -166,7 +166,7 @@ void NotesTree::removeSelected()
 	auto selected = sm->selectedIndexes();
 	if (selected.isEmpty())
 		return;
-	QMessageBox dialog(app->mainWindow());
+	QMessageBox dialog(app()->mainWindow());
 	if (selected.size() == 1)
 		dialog.setText(tr("Delete the note and all it's subnotes?"));
 	else

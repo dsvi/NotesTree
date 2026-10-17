@@ -96,7 +96,7 @@ void Note::addSubnotesDir(const std::filesystem::path &path)
 			continue;
 		auto ext = fi.path().extension();
 		if (ext != Note::textExt){
-			app->reportErrorMsg(tr("Unexpected file '%1'").arg(fi.path().c_str()));		
+			app()->reportErrorMsg(tr("Unexpected file '%1'").arg(fi.path().c_str()));		
 			continue;
 		}
 		auto subNote = createSub();
@@ -125,7 +125,7 @@ void Note::addSubnotesDir(const std::filesystem::path &path)
 	}
 	for (auto &dir : dirs){
 		const std::filesystem::path &dirPath = dir.second;
-		app->reportErrorMsg(tr("Unexpected directory '%1'").arg(dirPath.c_str()));	
+		app()->reportErrorMsg(tr("Unexpected directory '%1'").arg(dirPath.c_str()));	
 	}
 }
 
@@ -221,7 +221,7 @@ void Note::warning(QString &&msg)
 		throw_with_nested(RecoverableException(std::move(msg)));
 	}
 	catch(...){
-		app->reportError(std::current_exception());
+		app()->reportError(std::current_exception());
 	}
 }
 
@@ -243,7 +243,7 @@ void Note::error()
 		r->subNotes_.clear(); // zombify!
 		r->name_.clear();
 	}
-	app->error(e);
+	app()->error(e);
 }
 
 Note* Note::root()
@@ -425,7 +425,7 @@ void Note::downloaded(const QString &originalUrl, const QByteArray &content, con
 			return;
 		urlsInDownload_.erase(originalUrl);
 		if (urlsInDownload_.empty())
-			disconnect(app->downloader(), &Downloader::finished, this, &Note::downloaded);
+			disconnect(app()->downloader(), &Downloader::finished, this, &Note::downloaded);
 		if (!error.isNull()){
 			throw RecoverableException(tr(
 				"Can't download embedded file for '%1'\n"
@@ -573,7 +573,7 @@ void Note::handleRefs(QString html)
 		}
 		if (urlsInDownload_.find(url) != urlsInDownload_.end())
 			return;
-		auto dlr = app->downloader();
+		auto dlr = app()->downloader();
 		connect(dlr, &Downloader::finished, this, &Note::downloaded, Qt::UniqueConnection);
 		// the downloader lives on the main thread, this note on the io thread:
 		// the call has to be queued, not direct

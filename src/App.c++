@@ -4,20 +4,45 @@
 
 using namespace std;
 
-App *app;
+/// The application configures itself, so main() only has to create App.
+/// The setters are reached through App's base classes: setApplicationName is
+/// QCoreApplication's, setApplicationDisplayName QGuiApplication's.
+App::Identity::Identity()
+{
+	setApplicationName("NotesTree");
+	setApplicationDisplayName("Notes Tree");
+}
 
-App::App(QObject *parent) : QObject(parent)
+App::App(int &argc, char **argv)
+	: QApplication(argc, argv),
+	  mainWnd_(nullptr)
 {
 	connect(this, &App::error, this, &App::errorSlot);
 	connect(this, &App::reportError, this, &App::showErrorDilogSlot);
 	connect(this, &App::reportErrorMsg, this, &App::errorMsgSlot);
-	
+
 	ioThread_.setObjectName("io thread");
-	connect(qApp, &QCoreApplication::aboutToQuit, [&](){
-		ioThread_.quit();
-		ioThread_.wait();
-	});
+	// The io thread's event loop ends together with the app's: aboutToQuit is
+	// emitted before exec() returns, so the loop stops while everything that
+	// lives on it (rootNote_ and its NoteInTree proxies) is still alive.
+	// quit() is thread safe and idempotent, so it can be wired directly.
+	connect(this, &QCoreApplication::aboutToQuit, &ioThread_, &QThread::quit);
 	ioThread_.start();
+}
+
+/// Joins the io thread. This has to happen here, in the body, and not by
+/// letting a parent QObject delete the thread: ~QThread on a running thread is
+/// qFatal("QThread: Destroyed while thread ... is still running"), which aborts
+/// the process, so the join cannot be delegated to ownership. Running it in the
+/// body also puts it before the member destructors, i.e. while downloader_ and
+/// config_ are still valid - Note's slots on this thread call app()->downloader().
+App::~App()
+{
+	// On a normal exit aboutToQuit already quit the loop, so quit() is a no-op
+	// here; it is what covers the paths that never reached exec(), where
+	// aboutToQuit is never emitted.
+	ioThread_.quit();
+	ioThread_.wait();
 }
 
 static

@@ -202,14 +202,16 @@ NoteInTree::NoteInTree(std::weak_ptr<Note> n, QThread *viewThread) : QObject(nul
 	connect(this, &NoteInTree::adopt, note, &Note::adopt);
 	connect(this, &NoteInTree::createSubnote, note, &Note::createSubnote);
 
-	auto c = connect(note, &Note::noteAdded, [=,this](weak_ptr<Note> mn){
-		auto vn = make_shared<NoteInTree>(mn, viewThread);
-		QMetaObject::invokeMethod(this, "addSubnote", Qt::QueuedConnection, Q_ARG(std::shared_ptr<NoteInTree>, vn));
+	// 'this' as context object: the connection dies with this NoteInTree, and
+	// the lambda is queued into the view thread, so it can create the child
+	// and call addSubnote() directly. The note lives in the io thread and may
+	// already be gone by the time the queued call runs.
+	connect(note, &Note::noteAdded, this, [this, viewThread](weak_ptr<Note> mn){
+		auto sn = mn.lock();
+		if (!sn)
+			return;
+		addSubnote(make_shared<NoteInTree>(sn, viewThread));
 	});
-	connect(this, &NoteInTree::destroyed, [=,this](){
-		this->disconnect(c);
-	});
-
 	connect(note, &Note::noteRemoved, this, &NoteInTree::removeThis);
 	connect(note, &Note::attachReady, this, &NoteInTree::gotAttach);
 }

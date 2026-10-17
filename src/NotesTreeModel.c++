@@ -40,6 +40,7 @@ bool NotesTreeModel::setData(const QModelIndex &index, const QVariant &value, in
 		return false;
 
 	NoteInTree *item = noteAt(index);
+	emit aboutToRename(item->note);
 	item->changeName(value.toString());
 
 	return true;

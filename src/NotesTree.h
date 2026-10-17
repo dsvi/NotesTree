@@ -30,6 +30,8 @@ public:
 	void root(Note *root);
 signals:
 	void noteActivated(std::weak_ptr<Note> n);
+	/// a rename is about to start for that note; see NoteEditor::aboutToRenameNote()
+	void noteAboutToRename(std::weak_ptr<Note> n);
 private slots:
 	void addNew();
 	void removeSelected();

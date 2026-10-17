@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	//connect(this, &NotesTreeModel::loadFrom, rootNote_, &Note::createHierarchyFromRoot);
 	ui->notesTree->root(&rootNote_);
 	connect(ui->notesTree, &NotesTree::noteActivated, ui->noteEditor, &NoteEditor::editTextFor);
+	connect(ui->notesTree, &NotesTree::noteAboutToRename, ui->noteEditor, &NoteEditor::aboutToRenameNote);
 
 	connect(app()->cfg(), &Config::rootChanged, &rootNote_, &Note::createHierarchyFromRoot);
 	app()->cfg()->emitRootChanged();

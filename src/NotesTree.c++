@@ -22,6 +22,11 @@ void NotesTree::root(Note *root)
 			emit noteActivated(std::weak_ptr<Note>());
 	});
 	
+	// signal to signal: the model knows the rename is coming, the editor decides
+	// whether it is the note it is currently showing.
+	connect(&notesTreeModel_, &NotesTreeModel::aboutToRename,
+	        this, &NotesTree::noteAboutToRename);
+
 	QAction *addNew = app()->addToolButton(this, ui.toolBoxLayout, ":/ico/add");
 	addNew->setShortcuts(QKeySequence::New);
 	addNew->setToolTip(tr("Create a new note. As a subnote to the selected note, or at root of the notes tree"));

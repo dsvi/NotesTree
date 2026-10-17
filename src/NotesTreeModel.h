@@ -87,6 +87,9 @@ public:
 	NoteInTree *noteAt(const QModelIndex &);
 	NoteInTree *noteAt(const QModelIndex &) const;
 signals:
+	/// emitted by setData() before the rename is handed to the note, so the
+	/// editor can flush the note it is showing while the old name is still valid
+	void aboutToRename(std::weak_ptr<Note> n);
 	void deleteRecursively(const std::vector<std::weak_ptr<Note> > &notes);
 public slots:
 	void clear();

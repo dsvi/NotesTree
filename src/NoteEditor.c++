@@ -339,6 +339,7 @@ void NoteEditor::editTextFor(std::weak_ptr<Note> wn)
 	if (!note)
 		return;
 	Note *n = note.get();
+	editedNote_ = wn;
 
 	connectionsToNote_.push_back(connect(this, &NoteEditor::startEditingTxt, n, &Note::startEditing));
 	connectionsToNote_.push_back(connect(this, &NoteEditor::stopEditingTxt,  n, &Note::stopEditing));
@@ -370,12 +371,22 @@ void NoteEditor::noteText(const QString &txt, const QString &basePath)
 void NoteEditor::stopNoteTracking()
 {
 	save();
+	editedNote_.reset();
 	emit stopEditingTxt();
 	for (auto &c : connectionsToNote_)
 		disconnect(c);
 	connectionsToNote_.clear();
 	ui.noteEdit->setHtml(QString());
 	this->setEnabled(false);
+}
+
+void NoteEditor::aboutToRenameNote(std::weak_ptr<Note> wn)
+{
+	auto renamed = wn.lock();
+	auto current = editedNote_.lock();
+	if (!renamed || renamed.get() != current.get())
+		return; 
+	stopNoteTracking();
 }
 
 void NoteEditor::changed()

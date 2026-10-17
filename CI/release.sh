@@ -5,7 +5,7 @@ cd ..
 mkdir -p release
 
 set -e
-docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+docker run --privileged --rm tonistiigi/binfmt --install arm64,riscv64
 for platform in amd64 riscv64 arm64
 do
     ./docker-build.sh "--platform linux/$platform"

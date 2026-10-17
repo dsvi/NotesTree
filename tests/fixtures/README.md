@@ -52,3 +52,11 @@ malformed-html.html
 paste-with-theme.html
     the clipboard payload used by the paste-hook test: theme <style> blocks
     plus an inline coloured span.
+
+nested-web-tables.html
+    not hand written and not small: the tag skeleton of a real note that was
+    pasted out of a Dell product page (22 tables nested up to 8 deep, text and
+    images removed). It is here because that shape is what makes opening a note
+    expensive - a document that is already on screen relayouts itself after
+    every table and cell format change - so the restyling test needs the real
+    nesting, not a toy table.

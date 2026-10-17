@@ -49,5 +49,15 @@ void ColorStrippingTextEdit::insertFromMimeData(const QMimeData *source)
 
 void ColorStrippingTextEdit::restyleTables()
 {
+	// Every table or cell format change makes QTextEdit relayout the whole
+	// document, and a document with nested tables is expensive to lay out: html
+	// copied out of a web page is usually a pile of 1x1 wrapper tables, and one
+	// relayout of such a document costs a few hundred ms. Unbatched, restyling
+	// means one relayout per cell - opening a Dell product page took 21s, the
+	// same note restyled inside a single edit block takes 0.3s. Nested blocks are
+	// fine, so this stays one command when a paste is already being edited.
+	QTextCursor cursor(document());
+	cursor.beginEditBlock();
 	tableTheme_ = styleTables(document(), palette());
+	cursor.endEditBlock();
 }

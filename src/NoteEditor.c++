@@ -365,6 +365,7 @@ void NoteEditor::noteText(const QString &txt, const QString &basePath)
 	// made: it happens before the document is watched, so it does not schedule
 	// a save of a note that was only opened
 	ui.noteEdit->restyleTables();
+	doc->clearUndoRedoStacks();
 	connectionsToNote_.push_back(connect(doc, &QTextDocument::contentsChanged, this, &NoteEditor::changed));
 }
 

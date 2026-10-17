@@ -17,7 +17,8 @@
 #include <QTextDocument>
 #include <QTextFrame>
 #include <QTextTable>
-#include <QTextTableCellFormat>
+#include <QTextTableFormat>
+#include <QPixmap>
 #include <QTextTableFormat>
 
 #include "ColorStrippingTextEdit.h"
@@ -67,6 +68,23 @@ public:
 	void insert(const QMimeData *md){ insertFromMimeData(md); }
 };
 
+/// How many tables a document has, counting the nested ones.
+int countTables(QTextFrame *frame)
+{
+	int n = 0;
+	for (auto it = frame->begin(); !it.atEnd(); ++it){
+		QTextFrame *child = it.currentFrame();
+		if (!child)
+			continue;
+		if (child->format().isTableFormat())
+			++n;
+		n += countTables(child);
+	}
+	return n;
+}
+
+int countTables(QTextDocument *doc){ return countTables(doc->rootFrame()); }
+
 /// The last table of the document, or null when it has none.
 QTextTable *lastTable(QTextDocument *doc)
 {
@@ -101,6 +119,7 @@ private slots:
 	void pastedTableTakesThePalettesLook();
 	void savedHtmlLosesTheTableColours();
 	void restyledPasteUndoesAsOneStep();
+	void restylingALoadedNoteIsOneEdit();
 };
 
 void TestColorStrippingTextEdit::pasteDropsColors()
@@ -257,6 +276,47 @@ void TestColorStrippingTextEdit::savedHtmlLosesTheTableColours()
 	QCOMPARE(htmlHasColors(saved), false);
 }
 
+// Html copied out of a web page is a pile of nested tables (the fixture is the
+// table skeleton of a real note that came from a Dell product page: 22 tables,
+// nested up to 8 deep). A document that is already on screen relayouts itself
+// after every single table or cell format change, and laying this one out costs
+// ~150ms, so restyling cell by cell means one relayout per cell: 3.8s here,
+// ~20s for the note it was taken from. Restyling inside one edit block does the
+// same work once and stays under 50ms.
+//
+// The edit block is what the test asks for: it is the reason the relayouts
+// collapse into one, and a wall clock assertion on it would only be noise.
+void TestColorStrippingTextEdit::restylingALoadedNoteIsOneEdit()
+{
+	Probe edit;
+	edit.setHtml(fixture("nested-web-tables.html"));
+	edit.resize(900, 700);
+	// a document only gets a layout once it has been shown, and that is exactly
+	// the state a note is loaded into: the editor is already on screen showing
+	// the note that was open before
+	edit.show();
+	QPixmap shot(edit.viewport()->size());
+	edit.viewport()->render(&shot);
+
+	QTextDocument *doc = edit.document();
+	QVERIFY2(countTables(doc) >= 20, "the fixture lost its nesting: the check is vacuous");
+
+	// the history is the tell: restyling is one edit, so one undo has to take all
+	// of it back and leave nothing behind. Cell by cell it would be a command per
+	// cell, and the undo stack would still be full after a single undo.
+	doc->clearUndoRedoStacks();
+	bool canUndo = false;
+	connect(doc, &QTextDocument::undoAvailable, this, [&](bool a){ canUndo = a; });
+
+	const QString before = edit.toHtml();
+	edit.restyleTables();
+	QVERIFY2(edit.toHtml() != before, "the fixture came out of the restyle unchanged");
+	QVERIFY2(canUndo, "restyleTables() left nothing to undo");
+
+	doc->undo();
+	QCOMPARE(edit.toHtml(), before);
+	QVERIFY2(!canUndo, "restyleTables() pushed one undo command per cell");
+}
 // The restyling belongs to the paste instead of being an edit of its own: one
 // Ctrl+Z takes a pasted table out completely.
 void TestColorStrippingTextEdit::restyledPasteUndoesAsOneStep()

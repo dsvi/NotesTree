@@ -16,5 +16,5 @@ done
 
 rm -rf build-out
 
-docker system prune -a
+docker system prune -a -f
 docker builder prune -a -f

@@ -1,6 +1,7 @@
 ﻿#include "App.h"
 
 #include "KdeLookStyle.h"
+#include "ThemedSvgIconEngine.h"
 
 using namespace std;
 
@@ -52,67 +53,18 @@ int getIconSize(){
 	return size * 1.2;
 }
 
-/// Recolours a flat icon. The SVG glyphs are a single solid colour, so keeping
-/// their alpha and replacing their RGB is an exact recolour, antialiasing and
-/// all.
-static QPixmap tintedPixmap(const QPixmap &src, const QColor &color)
-{
-	QPixmap out(src.size());
-	out.setDevicePixelRatio(src.devicePixelRatioF());
-	out.fill(Qt::transparent);
-	QPainter p(&out);
-	p.drawPixmap(0, 0, src);
-	p.setCompositionMode(QPainter::CompositionMode_SourceIn);
-	p.fillRect(out.rect(), color);
-	p.end();
-	return out;
-}
-
+/// The themed icon for the SVG at resource path \p icon.
+///
+/// The colours are deliberately not worked out here: ThemedSvgIconEngine does
+/// that every time the glyph is drawn, so the icons follow the desktop's colour
+/// scheme while the app is running, instead of keeping the colours of whichever
+/// one happened to be active when the icon was made.
 QIcon App::themedSVGIcon(QString icon, float scale)
 {
-	// open svg resource load contents to qbytearray
 	QFile file(icon);
-	file.open(QIODevice::ReadOnly);
-	QByteArray baData = file.readAll();
-	// load svg contents to xml document and edit contents
-	QDomDocument doc;
-	doc.setContent(baData);
-	auto c = QApplication::palette().text().color();
-	auto color = QString("#%1%2%3").arg(c.red(), 0, 16).arg(c.green(), 0, 16).arg(c.blue(), 0, 16);
-	for (auto el : {"path","polygon"}){
-		auto list = doc.elementsByTagName(el);
-		for (int i = 0; i < list.count(); i++)	
-			list.at(i).toElement().setAttribute("fill", color);
-	}
-	// create svg renderer with edited contents
-	QSvgRenderer svgRenderer(doc.toByteArray());
-	auto size = getIconSize();
-	// create pixmap target (could be a QImage)
-	QPixmap pix(size*scale, size*scale);
-	pix.fill(Qt::transparent);
-	// create painter to act over pixmap
-	QPainter pixPainter(&pix);
-	// use renderer to render over painter which paints on pixmap
-	svgRenderer.render(&pixPainter);
-	pixPainter.end();
-
-	QIcon result(pix);
-	// Qt's tool buttons ask for QIcon::Active while the cursor is over an
-	// auto-raise button (QCommonStyle CE_ToolButtonLabel; Breeze uses the same
-	// rule), so give the icon an accent-coloured variant for that state.
-	// Disabled buttons ask for QIcon::Disabled. Without a variant Qt synthesises
-	// one in QCommonStyle::generatedIconPixmap, which ramps the glyph towards
-	// Disabled|Window and leaves it near-white (#d7d9dc on this palette). Breeze
-	// instead recolours the SVG with the palette's disabled text colour, so do
-	// the same; the accent never leaks into a disabled button because
-	// State_Enabled is tested before State_MouseOver.
-	const QColor accent = KdeLookStyle::hoverColor(QApplication::palette());
-	if (accent.isValid() && accent != c)
-		result.addPixmap(tintedPixmap(pix, accent), QIcon::Active, QIcon::Off);
-	const QColor disabled = QApplication::palette().color(QPalette::Disabled, QPalette::Text);
-	if (disabled.isValid() && disabled != c)
-		result.addPixmap(tintedPixmap(pix, disabled), QIcon::Disabled, QIcon::Off);
-	return result;
+	if (!file.open(QIODevice::ReadOnly))
+		return QIcon();
+	return QIcon(new ThemedSvgIconEngine(file.readAll(), std::move(icon), scale));
 }
 
 QAction *App::addToolButton(QWidget *parent, QLayout *l, QIcon icon)

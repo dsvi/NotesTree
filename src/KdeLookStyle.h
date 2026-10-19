@@ -40,8 +40,8 @@ public:
 	/// DecorationFocus and then to the palette Highlight. In the standard Breeze
 	/// schemes both decoration colours are the accent colour.
 	///
-	/// Public because the app bakes its own toolbar icons, so it has to know the
-	/// accent colour in order to give them a hovered (QIcon::Active) variant.
+	/// Public because the app paints its own toolbar icons, so it has to know
+	/// the accent colour to draw their hovered (QIcon::Active) variant.
 	static QColor hoverColor(const QPalette &palette);
 
 	/// Gives item views (and their viewports) WA_Hover, like Breeze does, so

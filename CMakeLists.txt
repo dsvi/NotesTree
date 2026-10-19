@@ -92,6 +92,8 @@ set(PROJECT_SOURCES
     src/NotesTree.h
     src/NotesTreeModel.c++
     src/NotesTreeModel.h
+    src/ThemedSvgIconEngine.c++
+    src/ThemedSvgIconEngine.h
     src/main.c++
 
     res/qml.qrc

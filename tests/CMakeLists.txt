@@ -88,6 +88,8 @@ set(NOTES_APP_SOURCES
     ../src/Downloader.h
     ../src/KdeLookStyle.c++
     ../src/KdeLookStyle.h
+    ../src/ThemedSvgIconEngine.c++
+    ../src/ThemedSvgIconEngine.h
     ../src/precomp.h
 )
 
@@ -118,13 +120,31 @@ target_link_libraries(tst_NoteSave PRIVATE
     Qt6::Svg Qt6::Xml Qt6::Network
 )
 
+# the toolbar icons following the desktop's colour scheme while the app is
+# running. The accent colour comes from kdeglobals, so the test points
+# XDG_CONFIG_HOME at a directory of its own; see its main().
+qt_add_executable(tst_ThemedSvgIconEngine
+    tst_ThemedSvgIconEngine.c++
+    ../src/ThemedSvgIconEngine.c++
+    ../src/ThemedSvgIconEngine.h
+    ../src/KdeLookStyle.c++
+    ../src/KdeLookStyle.h
+)
+target_include_directories(tst_ThemedSvgIconEngine PRIVATE ../src)
+target_link_libraries(tst_ThemedSvgIconEngine PRIVATE
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Test
+    Qt6::Svg Qt6::Xml
+)
+
 enable_testing()
 add_test(NAME HtmlColorStripper COMMAND tst_HtmlColorStripper)
 add_test(NAME ColorStrippingTextEdit COMMAND tst_ColorStrippingTextEdit)
 add_test(NAME NoteTableStyle COMMAND tst_NoteTableStyle)
 add_test(NAME NotesTreeModel COMMAND tst_NotesTreeModel)
 add_test(NAME NoteSave COMMAND tst_NoteSave)
+add_test(NAME ThemedSvgIconEngine COMMAND tst_ThemedSvgIconEngine)
 set_tests_properties(ColorStrippingTextEdit PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 set_tests_properties(NoteTableStyle PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 set_tests_properties(NotesTreeModel PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 set_tests_properties(NoteSave PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+set_tests_properties(ThemedSvgIconEngine PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

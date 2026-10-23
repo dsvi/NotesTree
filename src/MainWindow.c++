@@ -8,6 +8,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 
+	setWindowIcon(QIcon::fromTheme(QStringLiteral("NotesTree"),
+		QIcon(QStringLiteral(":/ico/NotesTree"))));
+
 	qRegisterMetaType<std::exception_ptr>();
 	qRegisterMetaType<std::weak_ptr<Note>>();
 	qRegisterMetaType<std::vector<std::weak_ptr<Note>>>();

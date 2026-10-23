@@ -13,10 +13,9 @@
   <property name="windowTitle">
    <string>Notes Tree</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="../res/qml.qrc">
-    <normaloff>:/ico/NotesTree</normaloff>:/ico/NotesTree</iconset>
-  </property>
+  <!-- The window icon is set in MainWindow.c++ via QIcon::fromTheme("NotesTree"): a
+       pixmap handed to the compositor gets its antialiased pixels recomposited with
+       wrong colours, which makes the green tree look blue-ish. -->
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
